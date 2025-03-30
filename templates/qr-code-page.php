@@ -20,7 +20,7 @@ $submission_url = esc_url_raw(add_query_arg(array(
 // Enqueue required scripts
 wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array(), '1.0.0', true);
 // Updated to enqueue minified html5-qrcode version
-wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js', [], null, true);
+wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode/', [], null, true);
 wp_enqueue_script('jquery');
 
 // Generate user QR data for old QR code (unchanged)
