@@ -108,26 +108,15 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 */
 		public function add_columns(array $columns): array {
 			$new = array();
-
-			$count = 0;
-			foreach ( $columns as $col_id => $col_label ) {
-				$count ++;
-
-				if ( $count == 3 ) {
-					$new['actions'] = esc_html__('Export', 'daily-attendance');
-				}
-
-				if ( 'title' === $col_id ) {
-					$new[ $col_id ] = esc_html__('Report Title', 'daily-attendance');
+			foreach ($columns as $col_id => $col_label) {
+				if ('title' === $col_id) {
+					$new[$col_id] = esc_html__('Report Title', 'daily-attendance');
 				} else {
-					$new[ $col_id ] = $col_label;
+					$new[$col_id] = $col_label;
 				}
 			}
-
-			unset( $new['date'] );
-
+			unset($new['date']);
 			$new['created_on'] = esc_html__('Created on', 'daily-attendance');
-
 			return $new;
 		}
 
@@ -141,20 +130,23 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 */
 		public function remove_row_actions(array $actions): array {
 			global $post;
-
-			if ( $post->post_type === 'da_reports' ) {
-				unset( $actions['inline hide-if-no-js'] );
+			if ($post->post_type === 'da_reports') {
+				$nonce = wp_create_nonce('wp_rest');
+				$export_url = rest_url("v1/export-csv/{$post->ID}") . "?_wpnonce={$nonce}";
+				
+				$actions = array(
+					'view' => sprintf('<a href="%s">%s</a>', 
+						get_permalink($post->ID), 
+						esc_html__('View', 'daily-attendance')
+					),
+					'export' => sprintf('<a href="%s" class="export-csv" data-nonce="%s" data-report="%d">%s</a>',
+						esc_url($export_url),
+						esc_attr($nonce),
+						$post->ID,
+						esc_html__('Export to CSV', 'daily-attendance')
+					)
+				);
 			}
-
-			if ( $post->post_type === 'da_reports' ) {
-
-				$actions['view'] = str_replace( 'Edit', 'View', $actions['edit'] );
-
-				unset( $actions['inline hide-if-no-js'] );
-				unset( $actions['trash'] );
-				unset( $actions['edit'] );
-			}
-
 			return $actions;
 		}
 

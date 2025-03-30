@@ -6,6 +6,11 @@ class SettingsManager {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
+        $tabs = array(
+            'email' => __('Email Templates', 'daily-attendance'),
+            'api' => __('API Documentation', 'daily-attendance'),
+            'notification' => __('Notifications', 'daily-attendance')
+        );
     }
 
     public function add_settings_page() {
@@ -155,6 +160,77 @@ class SettingsManager {
 
             <?php if ($current_tab === 'email'): ?>
                 <?php $this->render_email_settings(); ?>
+            <?php elseif ($current_tab === 'api'): ?>
+                <div class="api-documentation">
+                    <h2>API Documentation</h2>
+                    
+                    <div class="api-section">
+                        <h3>1. Mark Attendance</h3>
+                        <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/attendances/submit')); ?></code></p>
+                        <p><strong>Method:</strong> POST</p>
+                        <pre><code>
+// Using QR Code
+{
+    "user_id": 123,
+    "hash": "generated_hash_from_qr_code"
+}
+
+// Using Username/Password
+{
+    "userName": "john_doe",
+    "passWord": "your_password"
+}</code></pre>
+                    </div>
+
+                    <div class="api-section">
+                        <h3>2. Export Report to CSV</h3>
+                        <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
+                        <p><strong>Method:</strong> GET</p>
+                        <p><strong>Required:</strong> Admin authentication (nonce)</p>
+                        <pre><code>GET <?php echo esc_html(rest_url('v1/export-csv/123')); ?>?_wpnonce=your_nonce</code></pre>
+                    </div>
+
+                    <div class="api-section">
+                        <h3>3. Send Attendance Report</h3>
+                        <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
+                        <p><strong>Method:</strong> POST</p>
+                        <p><strong>Required:</strong> Admin authentication</p>
+                        <pre><code>{
+    "user_id": 123,
+    "month": "202403"  // Optional, defaults to current month
+}</code></pre>
+                    </div>
+
+                    <style>
+                        .api-documentation {
+                            padding: 20px;
+                            background: #fff;
+                            border-radius: 8px;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        }
+                        .api-section {
+                            margin: 30px 0;
+                            padding: 20px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        }
+                        .api-section h3 {
+                            margin-top: 0;
+                            color: #2271b1;
+                        }
+                        .api-section pre {
+                            background: #f5f5f5;
+                            padding: 15px;
+                            border-radius: 4px;
+                            overflow: auto;
+                        }
+                        code {
+                            background: #f5f5f5;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                        }
+                    </style>
+                </div>
             <?php else: ?>
                 <div class="coming-soon-wrapper">
                     <div class="coming-soon-content">

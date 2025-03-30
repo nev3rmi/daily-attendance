@@ -79,39 +79,32 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
     </div>
 
     <div class="pbda-report-selection">
-        <h3><?php esc_html_e('Send Attendance Reports', 'daily-attendance'); ?></h3>
+        <h3><?php esc_html_e('Send Monthly Reports', 'daily-attendance'); ?></h3>
         <div class="pbda-email-controls">
             <select id="month-select">
                 <?php 
-                // Get existing reports
-                $reports = get_posts(array(
-                    'post_type' => 'da_reports',
-                    'posts_per_page' => -1,
-                    'orderby' => 'meta_value',
-                    'meta_key' => '_month',
-                    'order' => 'DESC'
-                ));
-
-                foreach($reports as $report) {
-                    $month = get_post_meta($report->ID, '_month', true);
-                    $date = DateTime::createFromFormat('Ym', $month);
-                    if ($date) {
-                        $selected = ($month === date('Ym')) ? 'selected' : '';
-                        echo sprintf(
-                            '<option value="%s" data-report-id="%d" %s>%s</option>', 
-                            esc_attr($month),
-                            $report->ID,
-                            $selected,
-                            esc_html($date->format('F Y'))
-                        );
-                    }
+                // Get last 12 months of reports
+                for ($i = 0; $i < 12; $i++) {
+                    $date = new DateTime();
+                    $date->modify("-$i months");
+                    $month = $date->format('Ym');
+                    $selected = ($month === date('Ym')) ? 'selected' : '';
+                    printf(
+                        '<option value="%s" %s>%s</option>', 
+                        esc_attr($month),
+                        $selected,
+                        esc_html($date->format('F Y'))
+                    );
                 }
                 ?>
             </select>
             <button class="button button-primary" id="send-all-reports">
-                <?php esc_html_e('Send Reports to All', 'daily-attendance'); ?>
+                <?php esc_html_e('Send Reports to All Members', 'daily-attendance'); ?>
             </button>
-            <span id="email-status" style="display:none;"></span>
+            <div id="batch-progress" style="display:none;">
+                <div class="progress-bar"></div>
+                <div class="status"></div>
+            </div>
         </div>
     </div>
 
@@ -256,6 +249,30 @@ code {
     padding: 10px;
     margin: 10px 0;
     overflow-x: auto;
+}
+
+/* Add new styles for batch progress */
+#batch-progress {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+.progress-bar {
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.progress-bar div {
+    height: 100%;
+    background: #2271b1;
+    width: 0;
+    transition: width 0.3s;
+}
+.status {
+    margin-top: 10px;
+    text-align: center;
 }
 </style>
 
@@ -419,5 +436,64 @@ jQuery(document).ready(function($) {
             overflow: auto;
         }
     </style>`).appendTo('head');
+
+    // Add batch processing script
+    $('#send-all-reports').click(function() {
+        const $button = $(this);
+        const $progress = $('#batch-progress');
+        const $bar = $progress.find('.progress-bar');
+        const $status = $progress.find('.status');
+        const month = $('#month-select').val();
+        const users = $('.pbda-qr-item').map(function() {
+            return $(this).data('user-id');
+        }).get();
+        
+        let processed = 0;
+        
+        $button.prop('disabled', true);
+        $progress.show();
+        $bar.html('<div style="width: 0%"></div>');
+        
+        function processNext() {
+            if (processed >= users.length) {
+                $status.html('All reports sent!');
+                $button.prop('disabled', false);
+                setTimeout(() => $progress.fadeOut(), 3000);
+                return;
+            }
+            
+            const userId = users[processed];
+            $status.html(`Sending report ${processed + 1} of ${users.length}`);
+            
+            $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'send_attendance_report',
+                    nonce: '<?php echo wp_create_nonce("pbda_send_report"); ?>',
+                    user_id: userId,
+                    month: month
+                },
+                success: function(response) {
+                    processed++;
+                    const progress = (processed / users.length) * 100;
+                    $bar.find('div').css('width', progress + '%');
+                    
+                    // Add to debug log
+                    if (response.success) {
+                        addDebugEntry(response.data, userId);
+                    }
+                    
+                    processNext();
+                },
+                error: function() {
+                    processed++;
+                    processNext();
+                }
+            });
+        }
+        
+        processNext();
+    });
 });
 </script>
