@@ -129,6 +129,9 @@ class SettingsManager {
     }
 
     public function render_settings_page() {
+        // Add priority to ensure it's loaded after other admin scripts
+        wp_enqueue_style('dashicons');
+        
         if (!current_user_can('manage_options')) return;
         
         $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'email';

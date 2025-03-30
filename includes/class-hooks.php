@@ -54,11 +54,14 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function columns_content(string $column, int $post_id): void {
 
 			if ( $column == 'actions' ):
-				printf(
-					'<button class="button export-csv" data-report="%d">%s</button>',
-					$post_id,
-					esc_html__('Export to CSV', 'daily-attendance')
-				);
+				?>
+				<form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline;">
+					<input type="hidden" name="action" value="export_attendance_csv">
+					<input type="hidden" name="report_id" value="<?php echo esc_attr($post_id); ?>">
+					<input type="hidden" name="nonce" value="<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>">
+					<input type="submit" class="button" value="<?php esc_attr_e('Export to CSV', 'daily-attendance'); ?>">
+				</form>
+				<?php
 			endif;
 
 			if ( $column == 'created_on' ):
@@ -774,21 +777,25 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function ajax_export_attendance_csv(): void {
-			check_ajax_referer('pbda_ajax_nonce', 'nonce');
-			
+			// Verify nonce first
+			if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pbda_ajax_nonce')) {
+				wp_die('Invalid nonce');
+			}
+
 			if (!current_user_can('manage_options')) {
-				wp_send_json_error('Permission denied');
-				return;
+				wp_die('Permission denied');
 			}
 			
 			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
 			if (!$report_id) {
-				wp_send_json_error('Invalid report ID');
-				return;
+				wp_die('Invalid report ID');
 			}
-			
+
+			// Load and use the ExportManager
 			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
 			ExportManager::generate_csv($report_id);
+			
+			// The script will end here as ExportManager::generate_csv() calls exit()
 		}
 	}
 
