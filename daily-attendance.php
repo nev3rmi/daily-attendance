@@ -154,43 +154,28 @@ register_activation_hook(__FILE__, ['DailyAttendance', 'activate']);
 // Instantiate DailyAttendance and store in a variable for callback use
 $dailyAttendance = new DailyAttendance();
 
-// Instantiate PB_Settings to handle the admin menu
-new PB_Settings([
-    'add_in_menu'      => true,
-    'menu_type'        => 'menu', // Add this to specify it's a main menu
-    'menu_slug'        => 'daily-attendance',
-    'menu_name'        => 'Daily Attendance',
-    'menu_page_title'  => 'Daily Attendance',
-    'position'         => 30,
-    'menu_icon'        => 'dashicons-id-alt',
-    'pages'            => [
-        'daily-attendance' => [
-            'page_nav'      => 'Report',
-            'page_title'    => 'Attendance Report',
-            'callback'      => [$dailyAttendance, 'render_report_page'],
-            'priority'      => 1,
-            'page_settings' => [
-                'general_section' => [
-                    'title'       => 'Monthly Attendance Report',
-                    'description' => 'View and manage attendance records',
-                    'options'     => []
-                ]
-            ],
-            'show_submit'   => false,
-        ],
-        'members' => [
-            'page_nav'      => 'View Members',
-            'page_title'    => 'View Members',
-            'callback'      => [$dailyAttendance, 'render_view_members_page'],
-            'priority'      => 2,
-            'page_settings' => [
-                'members_section' => [
-                    'title'       => 'Members QR Codes',
-                    'description' => 'View all members and their QR codes',
-                    'options'     => []
-                ]
-            ],
-            'show_submit'   => false,
-        ]
-    ]
-]);
+// Remove the PB_Settings menu registration at the bottom and replace with:
+add_action('admin_menu', function() {
+    // Remove default "All Reports" submenu
+    remove_submenu_page('edit.php?post_type=da_reports', 'edit.php?post_type=da_reports');
+    
+    // Add Report submenu
+    add_submenu_page(
+        'edit.php?post_type=da_reports',
+        'Monthly Report',
+        'Monthly Report', 
+        'manage_options',
+        'monthly-report',
+        [$dailyAttendance, 'render_report_page']
+    );
+    
+    // Add View Members submenu
+    add_submenu_page(
+        'edit.php?post_type=da_reports',
+        'View Members',
+        'View Members',
+        'manage_options', 
+        'view-members',
+        [$dailyAttendance, 'render_view_members_page']
+    );
+});

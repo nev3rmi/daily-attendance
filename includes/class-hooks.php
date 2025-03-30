@@ -358,14 +358,13 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function register_post_types(): void {
 
 			pbda()->PB_Settings()->register_post_type( 'da_reports', array(
-				'singular'      => esc_html__( 'Daily Attendance', 'daily-attendance' ),
+				'singular'      => esc_html__( 'Attendance Report', 'daily-attendance' ),
 				'plural'        => esc_html__( 'Attendance Reports', 'daily-attendance' ),
-				'menu_icon'     => 'dashicons-yes',
-				'menu_position' => 20,
+				'menu_icon'     => 'dashicons-id-alt',
+				'menu_position' => 30,
 				'supports'      => array( '' ),
-				'capabilities'  => array( 'create_posts' => 'do_not_allow' ),
 				'labels'        => array(
-					'edit_item' => esc_html__( 'View Attendance Reports', 'daily-attendance' ),
+					'menu_name' => esc_html__( 'Daily Attendance', 'daily-attendance' ),
 				),
 			) );
 		}
