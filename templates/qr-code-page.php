@@ -1,32 +1,42 @@
-<?php
-if (!defined('ABSPATH')) exit;
+<?php if (!defined('ABSPATH')) exit;
+
+// Old QR code setup (unchanged)
+$attendance_page = get_option('pbda_attendance_page');
+if (!$attendance_page) {
+    $page_id = wp_insert_post(array(
+        'post_title'   => __('Attendance Submission', 'daily-attendance'),
+        'post_content' => '[attendance_submit]',
+        'post_status'  => 'publish',
+        'post_type'    => 'page'
+    ));
+    update_option('pbda_attendance_page', $page_id);
+    $attendance_page = $page_id;
+}
+$submission_url = esc_url_raw(add_query_arg(array(
+    'attendance'  => wp_create_nonce('pbda_attendance_' . date('Y-m-d')),
+    'auto_submit' => '1'
+), get_permalink($attendance_page)));
 
 // Enqueue required scripts
 wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array(), '1.0.0', true);
 wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode', [], null, true);
 wp_enqueue_script('jquery');
 
-// Generate the user's QR code
-$current_user_id = get_current_user_id();
-$qr_data = json_encode([
-    'user_id' => $current_user_id,
-    'hash' => hash_hmac('sha256', $current_user_id, get_option('pbda_qr_secret'))
-]);
-?>
+// Generate user QR data for old QR code (unchanged)
+$qr_data = $submission_url;
 
+?>
 <div class="pbda-qr-container">
     <div class="pbda-qr-left">
-        <h2><?php esc_html_e('Scan QR Code', 'daily-attendance'); ?></h2>
+        <h2><?php esc_html_e('Scan a QR Code', 'daily-attendance'); ?></h2>
         <div id="reader" style="width: 300px; height: 300px; margin: 0 auto;"></div>
-        <p class="qr-instructions"><?php esc_html_e('Point your camera at a QR code to scan.', 'daily-attendance'); ?></p>
+        <p class="qr-instructions"><?php esc_html_e('Point your camera at a QR code to mark attendance.', 'daily-attendance'); ?></p>
     </div>
     <div class="pbda-qr-right">
-        <h2><?php esc_html_e('Your QR Code', 'daily-attendance'); ?></h2>
-        <div class="pbda-qr-code">
-            <img src="https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=<?php echo urlencode($qr_data); ?>" 
-                 alt="<?php esc_attr_e('Your Attendance QR Code', 'daily-attendance'); ?>">
-        </div>
-        <p class="qr-instructions"><?php esc_html_e('This is your personal QR code for attendance.', 'daily-attendance'); ?></p>
+        <h2><?php esc_html_e('Your Old QR Code', 'daily-attendance'); ?></h2>
+        <div id="qrcode"></div>
+        <p class="qr-date"><?php echo esc_html(date('jS M, Y')); ?></p>
+        <p class="qr-instructions"><?php esc_html_e('Please scan this QR code using your mobile device', 'daily-attendance'); ?></p>
     </div>
 </div>
 
@@ -34,18 +44,17 @@ $qr_data = json_encode([
 jQuery(document).ready(function($) {
     const attendanceEndpoint = '<?php echo esc_url(rest_url('v1/attendances/submit')); ?>';
 
+    // Initialize new QR scanner (left side)
     function initializeQrScanner() {
         if (typeof Html5Qrcode === 'undefined') {
             console.error('Html5Qrcode is not defined. Retrying...');
-            setTimeout(initializeQrScanner, 500); // Retry after 500ms
+            setTimeout(initializeQrScanner, 500);
             return;
         }
-
         function onScanSuccess(decodedText) {
             try {
                 const qrData = JSON.parse(decodedText);
                 if (qrData.user_id && qrData.hash) {
-                    // Submit attendance via AJAX
                     $.ajax({
                         url: attendanceEndpoint,
                         method: 'POST',
@@ -69,18 +78,13 @@ jQuery(document).ready(function($) {
                 alert('<?php esc_html_e('Failed to parse QR code data.', 'daily-attendance'); ?>');
             }
         }
-
         function onScanFailure(error) {
             console.warn('QR Code scan failed:', error);
         }
-
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
-            { facingMode: "environment" }, // Use the back camera
-            {
-                fps: 10, // Scans per second
-                qrbox: { width: 250, height: 250 } // Scanning area
-            },
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
             onScanSuccess,
             onScanFailure
         ).catch(err => {
@@ -88,12 +92,28 @@ jQuery(document).ready(function($) {
             alert('<?php esc_html_e('Failed to start camera. Please check permissions.', 'daily-attendance'); ?>');
         });
     }
-
     initializeQrScanner();
+
+    // Generate old QR code (right side) using your old code style
+    try {
+        new QRCode(document.getElementById("qrcode"), {
+            text: <?php echo json_encode($qr_data); ?>,
+            width: 300,
+            height: 300,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L,
+            margin: 4
+        });
+    } catch (e) {
+        console.error('QR Code generation failed:', e);
+        document.getElementById("qrcode").innerHTML = '<?php esc_html_e('Error generating QR code', 'daily-attendance'); ?>';
+    }
 });
 </script>
 
 <style>
+/* ...existing styles... */
 .pbda-qr-container {
     display: flex;
     justify-content: space-between;
@@ -121,11 +141,18 @@ jQuery(document).ready(function($) {
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.pbda-qr-code img {
-    max-width: 100%;
-    height: auto;
+#qrcode {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.qr-date {
+    font-size: 1.2em;
+    color: #666;
+    margin: 15px 0;
 }
 .qr-instructions {
     color: #777;
