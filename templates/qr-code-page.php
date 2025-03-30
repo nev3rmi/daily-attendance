@@ -108,7 +108,7 @@ jQuery(document).ready(function($) {
         }
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
-            // { facingMode: "environment" },
+            { facingMode: "environment" },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             onScanSuccess,
             onScanFailure
