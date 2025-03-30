@@ -79,7 +79,12 @@ jQuery(document).ready(function($) {
             }
         }
         function onScanFailure(error) {
-            console.warn('QR Code scan failed:', error);
+            // If the error indicates no code was detected at all
+            if (error && error.indexOf("No MultiFormat Readers") !== -1) {
+                console.warn('No QR code detected. Please ensure the code is properly aligned and well-lit.');
+            } else {
+                console.warn('QR Code scan failed:', error);
+            }
         }
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
