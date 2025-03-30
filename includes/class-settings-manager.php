@@ -233,7 +233,7 @@ class SettingsManager {
         <!-- Update Preview Button -->
         <button type="button" id="update-preview" class="button button-primary">
             <span class="dashicons dashicons-update"></span> 
-            Update Preview
+            <span>Update Preview</span>
         </button>
 
         <style>
@@ -285,7 +285,22 @@ class SettingsManager {
             bottom: 20px;
             right: 20px;
             z-index: 100;
-            padding: 10px 20px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: auto;
+        }
+        #update-preview .dashicons {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        #update-preview span {
+            line-height: 1.4;
         }
         </style>
 
