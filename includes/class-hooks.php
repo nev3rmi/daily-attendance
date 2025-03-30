@@ -55,14 +55,41 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			if ( $column == 'actions' ):
 				$nonce = wp_create_nonce('wp_rest');
-				$export_url = rest_url('v1/export-csv/' . $post_id);
-				?>
-				<a href="<?php echo esc_url($export_url); ?>" 
-				   class="button export-csv" 
-				   data-nonce="<?php echo esc_attr($nonce); ?>">
-					<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
-				</a>
-				<?php
+					$rest_url = rest_url('v1/export-csv/' . $post_id);
+					?>
+					<button class="button export-csv" 
+							data-report="<?php echo esc_attr($post_id); ?>"
+							data-nonce="<?php echo esc_attr($nonce); ?>"
+							data-url="<?php echo esc_url($rest_url); ?>">
+						<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+					</button>
+					<script>
+					jQuery(document).ready(function($) {
+						$('.export-csv').on('click', function(e) {
+							e.preventDefault();
+							const url = $(this).data('url');
+							const nonce = $(this).data('nonce');
+							
+							// Create and submit a form to handle the download
+							const form = $('<form>', {
+								'method': 'GET',
+								'action': url
+							});
+							
+							// Add REST nonce
+							form.append($('<input>', {
+								'type': 'hidden',
+								'name': '_wpnonce',
+								'value': nonce
+							}));
+							
+							$('body').append(form);
+							form.submit();
+							form.remove();
+						});
+					});
+					</script>
+					<?php
 			endif;
 
 			if ( $column == 'created_on' ):
@@ -256,7 +283,9 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
-				'permission_callback' => array($this, 'check_admin_permission'),
+				'permission_callback' => function() {
+					return is_user_logged_in() && current_user_can('manage_options');
+				},
 				'args' => array(
 					'report_id' => array(
 						'required' => true,
