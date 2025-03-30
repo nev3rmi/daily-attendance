@@ -165,11 +165,24 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 
 		public function register_api(): void {
-
-			register_rest_route( 'v1', '/attendances/submit', array(
-				'methods'  => 'POST',
-				'callback' => array( $this, 'serve_attendances_submit' ),
-			) );
+			register_rest_route('v1', '/attendances/submit', array(
+				'methods' => 'POST',
+				'callback' => array($this, 'serve_attendances_submit'),
+				'permission_callback' => '__return_true',
+				'args' => array(
+					'userName' => array(
+						'required' => true,
+						'type' => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description' => 'WordPress username',
+					),
+					'passWord' => array(
+						'required' => true,
+						'type' => 'string',
+						'description' => 'WordPress password',
+					),
+				),
+			));
 		}
 
 
