@@ -157,26 +157,39 @@ $dailyAttendance = new DailyAttendance();
 // Instantiate PB_Settings to handle the admin menu
 new PB_Settings([
     'add_in_menu'      => true,
+    'menu_type'        => 'menu', // Add this to specify it's a main menu
     'menu_slug'        => 'daily-attendance',
     'menu_name'        => 'Daily Attendance',
-    'menu_page_title'  => 'Daily Attendance Settings',
+    'menu_page_title'  => 'Daily Attendance',
     'position'         => 30,
     'menu_icon'        => 'dashicons-id-alt',
     'pages'            => [
-        'report' => [
+        'daily-attendance' => [
             'page_nav'      => 'Report',
             'page_title'    => 'Attendance Report',
             'callback'      => [$dailyAttendance, 'render_report_page'],
             'priority'      => 1,
-            'page_settings' => [],
+            'page_settings' => [
+                'general_section' => [
+                    'title'       => 'Monthly Attendance Report',
+                    'description' => 'View and manage attendance records',
+                    'options'     => []
+                ]
+            ],
             'show_submit'   => false,
         ],
-        'view-members' => [
+        'members' => [
             'page_nav'      => 'View Members',
             'page_title'    => 'View Members',
             'callback'      => [$dailyAttendance, 'render_view_members_page'],
             'priority'      => 2,
-            'page_settings' => [],
+            'page_settings' => [
+                'members_section' => [
+                    'title'       => 'Members QR Codes',
+                    'description' => 'View all members and their QR codes',
+                    'options'     => []
+                ]
+            ],
             'show_submit'   => false,
         ]
     ]
