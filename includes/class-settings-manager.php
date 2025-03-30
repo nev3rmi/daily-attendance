@@ -165,6 +165,27 @@ class SettingsManager {
     }
 
     private function render_email_settings() {
+        // Enqueue required assets
+        wp_enqueue_style(
+            'pbda-email-templates',
+            PBDA_PLUGIN_URL . 'assets/css/email-templates.css',
+            [],
+            PBDA_VERSION
+        );
+
+        wp_enqueue_script(
+            'pbda-email-preview',
+            PBDA_PLUGIN_URL . 'assets/js/email-preview.js',
+            ['jquery', 'wp-editor'],
+            PBDA_VERSION,
+            true
+        );
+
+        // Add template defaults for JS
+        wp_localize_script('pbda-email-preview', 'pbdaDefaults', [
+            'subject' => $this->get_default_subject(),
+            'template' => $this->get_default_template()
+        ]);
         ?>
         <div class="pbda-settings-layout">
             <!-- Left side: Edit forms -->
@@ -239,156 +260,18 @@ class SettingsManager {
             <span class="dashicons dashicons-update"></span> 
             <span>Update Preview</span>
         </button>
-
-        <style>
-        .template-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .template-edit, .template-preview {
-            min-width: 400px;
-        }
-        .shortcode-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-left: 4px solid #2271b1;
-        }
-        .shortcode-info ul {
-            margin: 5px 0 0 20px;
-        }
-        .shortcode-info li {
-            margin: 5px 0;
-        }
-        #template-preview-subject {
-            margin: 10px 0;
-            padding: 15px;
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        #template-preview-body {
-            margin: 10px 0;
-            padding: 20px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 400px;
-        }
-        .template-preview h3 {
-            color: #666;
-        }
-        #update-preview {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 100;
-            padding: 6px 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            height: auto;
-        }
-        #update-preview .dashicons {
-            width: 16px;
-            height: 16px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            margin: 0;
-        }
-        #update-preview span {
-            line-height: 1.4;
-        }
-        </style>
-
-        <script>
-        jQuery(document).ready(function($) {
-            function getExampleTable() {
-                return `
-                    <table style="border-collapse: collapse; width: 100%;">
-                        <tr style="background: #f8f9fa;">
-                            <th style="padding: 8px; border: 1px solid #ddd;">Date</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Day</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Time</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;">March 1, 2024</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">Friday</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">09:00 AM</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;">March 2, 2024</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">Saturday</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">08:55 AM</td>
-                        </tr>
-                    </table>`;
-            }
-
-            function updatePreview() {
-                // Add loading indicator
-                $('#template-preview-body').html('<div class="updating">Updating preview...</div>');
-                
-                var subject = $('#pbda_email_subject').val() || '<?php echo esc_js($this->get_default_subject()); ?>';
-                var bodyContent = '';
-                
-                // Get content from TinyMCE or textarea
-                if (tinymce.get('pbda_email_template')) {
-                    bodyContent = tinymce.get('pbda_email_template').getContent();
-                } else {
-                    bodyContent = $('#pbda_email_template').val();
-                }
-
-                if (!bodyContent) {
-                    bodyContent = '<?php echo esc_js($this->get_default_template()); ?>';
-                }
-
-                // Replace shortcodes
-                subject = subject.replace(/\[username\]/g, 'John Doe')
-                               .replace(/\[title\]/g, 'March 2024')
-                               .replace(/\[date\]/g, new Date().toLocaleDateString());
-                
-                bodyContent = bodyContent.replace(/\[username\]/g, 'John Doe')
-                                       .replace(/\[title\]/g, 'March 2024')
-                                       .replace(/\[email\]/g, 'john@example.com')
-                                       .replace(/\[date\]/g, new Date().toLocaleDateString())
-                                       .replace(/\[total_days\]/g, '15')
-                                       .replace(/\[attendance_table\]/g, getExampleTable());
-                
-                $('#template-preview-subject span').text(subject);
-                $('#template-preview-body').html(bodyContent);
-            }
-
-            // Manual preview update button
-            $('#update-preview').on('click', function() {
-                updatePreview();
-                $(this).find('.dashicons').addClass('spin');
-                setTimeout(() => {
-                    $(this).find('.dashicons').removeClass('spin');
-                }, 500);
-            });
-
-            // Initial preview
-            setTimeout(updatePreview, 1000);
-
-            // Add spin animation
-            $('<style>')
-                .text('@keyframes spin { 100% { transform: rotate(360deg); } }' +
-                      '.spin { animation: spin 0.5s linear; }' +
-                      '.updating { padding: 20px; text-align: center; color: #666; }')
-                .appendTo('head');
-        });
-        </script>
         <?php
     }
 
     private function render_api_documentation() {
+        // Enqueue API documentation styles from new location
+        wp_enqueue_style(
+            'pbda-api-documentation', 
+            PBDA_PLUGIN_URL . 'assets/css/api-docs.css',
+            [],
+            PBDA_VERSION
+        );
+
         $example_user = reset(get_users(['fields' => ['ID', 'user_login']]));
         $example_hash = $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash';
         $api_key = get_option('pbda_api_key', '');
