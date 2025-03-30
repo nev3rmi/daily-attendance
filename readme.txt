@@ -1,5 +1,5 @@
 === QR Code Attendance System ===
-Contributors: toho
+Contributors: NeV3RmI
 Tags: attendance, qr code, staff management, employee tracking
 Requires at least: 6.0
 Tested up to: 6.7.2
