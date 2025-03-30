@@ -67,17 +67,29 @@ class DailyAttendance {
 
     private function init_admin_menu(): void {
         add_action('admin_menu', function() {
+            // Main menu
             add_menu_page(
-                'Daily Attendance',
-                'Daily Attendance',
-                'manage_options',
-                'daily-attendance',
-                [$this, 'render_report_page'],
-                'dashicons-id-alt',
-                30
+                'Daily Attendance',         // Page title
+                'Daily Attendance',         // Menu title
+                'manage_options',           // Capability
+                'attendance-dashboard',     // Menu slug
+                [$this, 'render_report_page'], // Callback
+                'dashicons-id-alt',        // Icon
+                30                         // Position
             );
+            
+            // Submenus
             add_submenu_page(
-                'daily-attendance',
+                'attendance-dashboard',    // Parent slug
+                'Attendance Report',       // Page title
+                'Report',                  // Menu title
+                'manage_options',          // Capability
+                'attendance-dashboard',    // Menu slug (same as parent for first submenu)
+                [$this, 'render_report_page']
+            );
+            
+            add_submenu_page(
+                'attendance-dashboard',
                 'View Members',
                 'View Members',
                 'manage_options',
@@ -108,33 +120,22 @@ class DailyAttendance {
         <?php
     }
 
-    public function render_qr_list_page(): void {
-        $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
-        ?>
-        <div class="wrap">
-            <h1>User QR Codes</h1>
-            <div class="pbda-qr-grid">
-                <?php foreach ($users as $user): ?>
-                    <div class="pbda-qr-item">
-                        <h3><?php echo esc_html($user->user_login); ?></h3>
-                        <div class="pbda-qr-code">
-                            <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=<?php 
-                                echo urlencode($this->generate_qr_data($user->ID)); 
-                            ?>" alt="QR Code">
-                        </div>
-                        <p><?php echo esc_html($user->user_email); ?></p>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php
-    }
-
     public function render_report_page(): void {
+        $num_days = date('t'); // Get number of days in current month
         ?>
         <div class="wrap">
-            <h1>Attendance Report</h1>
-            <p>Report content goes here...</p>
+            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <div class="pbda-report-header">
+                <div class="pbda-info">
+                    <span class="label"><?php esc_html_e('Report Month', 'daily-attendance'); ?></span>
+                    <span class="value"><?php echo date('F, Y'); ?></span>
+                </div>
+                <div class="pbda-info">
+                    <span class="label"><?php esc_html_e('Total Users', 'daily-attendance'); ?></span>
+                    <span class="value"><?php echo count(get_users()); ?></span>
+                </div>
+            </div>
+            <?php echo pbda_get_attendance_report($num_days, pbda_current_report_id()); ?>
         </div>
         <?php
     }
