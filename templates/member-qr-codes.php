@@ -329,67 +329,7 @@ jQuery(document).ready(function($) {
         sendReport(userId);
     });
 
-    // Send all button
-    $('#send-all-reports').click(function() {
-        const $status = $('#email-status');
-        const $button = $(this);
-        
-        $button.prop('disabled', true);
-        $status.html('<?php esc_html_e('Sending reports...', 'daily-attendance'); ?>')
-            .show()
-            .removeClass('email-status-success email-status-error');
-
-        let sent = 0;
-        const total = $('.pbda-qr-item').length;
-
-        $('.pbda-qr-item').each(function(index) {
-            const userId = $(this).data('user-id');
-            setTimeout(() => {
-                sendReport(userId);
-                sent++;
-                if (sent === total) {
-                    $button.prop('disabled', false);
-                    $status.html('<?php esc_html_e('All reports sent!', 'daily-attendance'); ?>')
-                        .addClass('email-status-success');
-                    setTimeout(() => $status.fadeOut(), 5000);
-                }
-            }, index * 1000); // Stagger requests 1 second apart
-        });
-    });
-
-    // Update styles for debug entries
-    $(`<style>
-        .debug-entry {
-            margin-bottom: 15px;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #ccc;
-            background: white;
-        }
-        .debug-entry.processing { border-left-color: #2196F3; }
-        .debug-entry.success { border-left-color: #4CAF50; }
-        .debug-entry.error { border-left-color: #f44336; }
-        .debug-entry h4 {
-            margin: 0 0 10px 0;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .debug-details p {
-            margin: 5px 0;
-        }
-        .attendance-data {
-            margin-top: 10px;
-        }
-        .attendance-data pre {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            max-height: 200px;
-            overflow: auto;
-        }
-    </style>`).appendTo('head');
-
-    // Add batch processing script
+    // Replace both click handlers for send-all-reports with this single handler
     $('#send-all-reports').click(function() {
         const $button = $(this);
         const $progress = $('#batch-progress');
@@ -431,15 +371,27 @@ jQuery(document).ready(function($) {
                     const progress = (processed / users.length) * 100;
                     $bar.find('div').css('width', progress + '%');
                     
-                    // Add to debug log
+                    // Update individual status
+                    const $status = $(`.pbda-qr-item[data-user-id="${userId}"] .report-status`);
                     if (response.success) {
+                        $status.html('✓ ' + response.data.message)
+                               .addClass('status-success')
+                               .removeClass('status-error');
                         addDebugEntry(response.data, userId);
+                    } else {
+                        $status.html('✕ Failed')
+                               .addClass('status-error')
+                               .removeClass('status-success');
                     }
                     
                     processNext();
                 },
                 error: function() {
                     processed++;
+                    const $status = $(`.pbda-qr-item[data-user-id="${userId}"] .report-status`);
+                    $status.html('✕ Failed')
+                           .addClass('status-error')
+                           .removeClass('status-success');
                     processNext();
                 }
             });
@@ -447,5 +399,37 @@ jQuery(document).ready(function($) {
         
         processNext();
     });
+
+    // Update styles for debug entries
+    $(`<style>
+        .debug-entry {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+            background: white;
+        }
+        .debug-entry.processing { border-left-color: #2196F3; }
+        .debug-entry.success { border-left-color: #4CAF50; }
+        .debug-entry.error { border-left-color: #f44336; }
+        .debug-entry h4 {
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .debug-details p {
+            margin: 5px 0;
+        }
+        .attendance-data {
+            margin-top: 10px;
+        }
+        .attendance-data pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow: auto;
+        }
+    </style>`).appendTo('head');
 });
 </script>

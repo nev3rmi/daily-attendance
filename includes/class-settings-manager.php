@@ -521,4 +521,73 @@ fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
         </div>
         <?php
     }
+
+    private function render_notification_settings() {
+        ?>
+        <div class="notification-settings-wrapper">
+            <div class="coming-soon-content">
+                <span class="dashicons dashicons-bell"></span>
+                <h2><?php esc_html_e('Notification Settings', 'daily-attendance'); ?></h2>
+                <p><?php esc_html_e('Email notification settings will be available in the next update. Stay tuned!', 'daily-attendance'); ?></p>
+                
+                <div class="planned-features">
+                    <h3><?php esc_html_e('Planned Features', 'daily-attendance'); ?></h3>
+                    <ul>
+                        <li><?php esc_html_e('Daily attendance summary emails', 'daily-attendance'); ?></li>
+                        <li><?php esc_html_e('Weekly attendance reports', 'daily-attendance'); ?></li>
+                        <li><?php esc_html_e('Late arrival notifications', 'daily-attendance'); ?></li>
+                        <li><?php esc_html_e('Absence alerts', 'daily-attendance'); ?></li>
+                        <li><?php esc_html_e('Custom notification schedules', 'daily-attendance'); ?></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <style>
+            .notification-settings-wrapper {
+                margin: 50px auto;
+                text-align: center;
+                padding: 40px;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                max-width: 600px;
+            }
+            .coming-soon-content .dashicons {
+                font-size: 48px;
+                width: 48px;
+                height: 48px;
+                color: #2271b1;
+                margin-bottom: 20px;
+            }
+            .coming-soon-content h2 {
+                margin: 0 0 15px;
+                color: #1d2327;
+            }
+            .coming-soon-content p {
+                font-size: 15px;
+                color: #646970;
+                margin-bottom: 30px;
+            }
+            .planned-features {
+                text-align: left;
+                background: #f8f9fa;
+                padding: 20px 30px;
+                border-radius: 6px;
+                margin-top: 30px;
+            }
+            .planned-features h3 {
+                color: #2271b1;
+                margin: 0 0 15px;
+            }
+            .planned-features ul {
+                margin: 0;
+                padding: 0 0 0 20px;
+            }
+            .planned-features li {
+                margin: 10px 0;
+                color: #50575e;
+            }
+        </style>
+        <?php
+    }
 }
