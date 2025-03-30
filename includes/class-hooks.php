@@ -54,7 +54,11 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function columns_content(string $column, int $post_id): void {
 
 			if ( $column == 'actions' ):
-				printf( '<a href="">%s</a>', esc_html__( 'CSV Export (Upcoming Feature)', 'daily-attendance' ) );
+				printf(
+					'<button class="button export-csv" data-report="%d">%s</button>',
+					$post_id,
+					esc_html__('Export to CSV', 'daily-attendance')
+				);
 			endif;
 
 			if ( $column == 'created_on' ):
@@ -81,7 +85,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				$count ++;
 
 				if ( $count == 3 ) {
-					$new['actions'] = esc_html__('Actions', 'daily-attendance');
+					$new['actions'] = esc_html__('Export', 'daily-attendance');
 				}
 
 				if ( 'title' === $col_id ) {
