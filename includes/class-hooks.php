@@ -568,23 +568,23 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				wp_send_json_error('Permission denied');
 			}
 
-			// Get WordPress timezone
+			// Get WordPress timezone and create DateTime object
 			$wp_timezone = wp_timezone();
-			$current_time = new DateTime('now', $wp_timezone);
+			$date_obj = new DateTime($date . ' ' . current_time('H:i:s'), $wp_timezone);
 			
 			$args = array(
 				'user_id' => $user_id,
 				'report_id' => pbda_current_report_id(),
 				'date' => $date,
-				'current_time' => $current_time->getTimestamp(),
+				'current_time' => $date_obj->getTimestamp(),
+				'timezone' => $wp_timezone->getName()
 			);
 
-			$args = array(
-				'user_id' => $user_id,
-				'report_id' => pbda_current_report_id(),
+			error_log("Adding attendance: " . print_r([
 				'date' => $date,
-				'current_time' => strtotime($date . ' ' . current_time('H:i:s')),
-			);
+				'formatted_time' => $date_obj->format('Y-m-d H:i:s T'),
+				'timestamp' => $date_obj->getTimestamp()
+			], true));
 
 			$response = add_post_meta(pbda_current_report_id(), 'pbda_attendance', $args);
 			

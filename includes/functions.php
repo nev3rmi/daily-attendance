@@ -165,7 +165,14 @@ if ( ! function_exists( 'pbda_insert_attendance' ) ) {
 			'report_id'    => $report_id,
 			'date'         => $current_time->format('Y-m-d'),
 			'current_time' => $current_time->getTimestamp(),
+			'timezone'     => $wp_timezone->getName() // Store timezone info
 		);
+
+		error_log("Inserting attendance: " . print_r([
+			'user_id' => $user_id,
+			'date' => $current_time->format('Y-m-d H:i:s T'),
+			'timestamp' => $current_time->getTimestamp()
+		], true));
 
 		$response = add_post_meta( $report_id, 'pbda_attendance', $args );
 
@@ -293,11 +300,19 @@ function pbda_format_time($attendance_data) {
         return 'N/A';
     }
 
+    // Get WordPress timezone
     $wp_timezone = wp_timezone();
-    $date = new DateTime();
-    $date->setTimestamp($timestamp);
-    $date->setTimezone($wp_timezone);
-    return $date->format('h:i A');
+    
+    try {
+        $date = new DateTime();
+        $date->setTimestamp($timestamp);
+        $date->setTimezone($wp_timezone);
+        error_log("Formatting time: Original timestamp: $timestamp, Formatted: " . $date->format('Y-m-d H:i:s T'));
+        return $date->format('h:i A');
+    } catch (Exception $e) {
+        error_log("Time formatting error: " . $e->getMessage());
+        return 'Invalid Time';
+    }
 }
 
 function pbda_send_attendance_report($user_id = false, $report_id = null) {
