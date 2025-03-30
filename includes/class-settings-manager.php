@@ -15,7 +15,8 @@ class SettingsManager {
             'Settings',
             'manage_options',
             $this->settings_page,
-            array($this, 'render_settings_page')
+            array($this, 'render_settings_page'),
+            100  // High priority to keep at bottom
         );
     }
 
@@ -64,15 +65,22 @@ class SettingsManager {
     }
 
     public function render_section_info() {
-        echo '<p>Configure your email template using the following shortcodes:</p>';
-        echo '<ul style="list-style: disc; margin-left: 20px;">';
-        echo '<li><code>[title]</code> - Report title (e.g., "March 2024")</li>';
-        echo '<li><code>[username]</code> - User\'s display name</li>';
-        echo '<li><code>[attendance_table]</code> - Attendance data table</li>';
-        echo '<li><code>[total_days]</code> - Total days present</li>';
-        echo '<li><code>[email]</code> - User\'s email</li>';
-        echo '<li><code>[date]</code> - Current date</li>';
-        echo '</ul>';
+        $shortcodes = array(
+            '[title]' => 'Report title (e.g., "March 2024")',
+            '[username]' => 'User\'s display name',
+            '[email]' => 'User\'s email address',
+            '[attendance_table]' => 'Attendance data table',
+            '[total_days]' => 'Total days present',
+            '[date]' => 'Current date (formatted according to WordPress settings)'
+        );
+
+        echo '<div class="shortcode-info">';
+        echo '<p>Available shortcodes for both subject and body:</p>';
+        echo '<ul class="shortcode-list">';
+        foreach ($shortcodes as $code => $desc) {
+            printf('<li><code>%s</code> - %s</li>', esc_html($code), esc_html($desc));
+        }
+        echo '</ul></div>';
     }
 
     public function render_template_field() {
@@ -122,7 +130,6 @@ class SettingsManager {
                                 id="pbda_email_subject" 
                                 value="<?php echo esc_attr(get_option('pbda_email_subject', $this->get_default_subject())); ?>" 
                                 class="large-text">
-                            <p class="description">Available shortcodes: [title], [username], [date]</p>
                         </div>
 
                         <div class="form-field">
@@ -141,6 +148,13 @@ class SettingsManager {
                     </form>
                 </div>
 
+                <div class="pbda-preview-controls">
+                    <button type="button" id="update-preview" class="button button-secondary">
+                        <span class="dashicons dashicons-update"></span> 
+                        Update Preview
+                    </button>
+                </div>
+
                 <div class="pbda-settings-preview">
                     <h3>Live Preview</h3>
                     <div id="template-preview-subject">
@@ -151,20 +165,54 @@ class SettingsManager {
             </div>
 
             <style>
+            .shortcode-info {
+                margin: 20px 0;
+                padding: 15px;
+                background: #fff;
+                border-left: 4px solid #2271b1;
+                box-shadow: 0 1px 1px rgba(0,0,0,.04);
+            }
+            .shortcode-list {
+                list-style: none;
+                margin: 10px 0;
+                columns: 2;
+            }
+            .shortcode-list li {
+                margin-bottom: 8px;
+            }
             .pbda-settings-container {
                 display: flex;
-                gap: 30px;
+                gap: 20px;
                 margin-top: 20px;
+                position: relative;
             }
             .pbda-settings-form {
                 flex: 1;
                 min-width: 500px;
             }
+            .pbda-preview-controls {
+                position: sticky;
+                top: 32px;
+                z-index: 100;
+                background: #f0f0f1;
+                padding: 10px;
+                border-radius: 4px;
+                text-align: center;
+            }
+            #update-preview {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+            }
+            #update-preview .dashicons {
+                margin-top: 3px;
+            }
             .pbda-settings-preview {
                 flex: 1;
                 min-width: 400px;
                 position: sticky;
-                top: 32px;
+                top: 100px;
             }
             #template-preview-subject {
                 margin-bottom: 15px;
@@ -214,25 +262,28 @@ class SettingsManager {
                 }
 
                 function updatePreview() {
-                    // Update subject preview
+                    // Add loading indicator
+                    $('#template-preview-body').html('<div class="updating">Updating preview...</div>');
+                    
                     var subject = $('#pbda_email_subject').val() || '<?php echo esc_js($this->get_default_subject()); ?>';
-                    subject = subject.replace('[username]', 'John Doe')
-                                   .replace('[title]', 'March 2024')
-                                   .replace('[date]', new Date().toLocaleDateString());
-                    $('#template-preview-subject span').text(subject);
-
-                    // Update body preview
-                    var bodyContent;
-                    if (tinymce.activeEditor) {
-                        bodyContent = tinymce.activeEditor.getContent();
+                    var bodyContent = '';
+                    
+                    // Get content from TinyMCE or textarea
+                    if (tinymce.get('pbda_email_template')) {
+                        bodyContent = tinymce.get('pbda_email_template').getContent();
                     } else {
                         bodyContent = $('#pbda_email_template').val();
                     }
-                    
+
                     if (!bodyContent) {
                         bodyContent = '<?php echo esc_js($this->get_default_template()); ?>';
                     }
 
+                    // Replace shortcodes
+                    subject = subject.replace(/\[username\]/g, 'John Doe')
+                                   .replace(/\[title\]/g, 'March 2024')
+                                   .replace(/\[date\]/g, new Date().toLocaleDateString());
+                    
                     bodyContent = bodyContent.replace(/\[username\]/g, 'John Doe')
                                            .replace(/\[title\]/g, 'March 2024')
                                            .replace(/\[email\]/g, 'john@example.com')
@@ -240,29 +291,28 @@ class SettingsManager {
                                            .replace(/\[total_days\]/g, '15')
                                            .replace(/\[attendance_table\]/g, getExampleTable());
                     
+                    $('#template-preview-subject span').text(subject);
                     $('#template-preview-body').html(bodyContent);
                 }
 
-                // Watch for subject changes
-                $('#pbda_email_subject').on('input', updatePreview);
-
-                // Watch for body changes
-                if (typeof tinymce !== 'undefined') {
-                    tinymce.on('addeditor', function(e) {
-                        e.editor.on('input change keyup', updatePreview);
-                    });
-                }
-
-                // Also watch for textarea changes (when TinyMCE is disabled)
-                $('#pbda_email_template').on('input', updatePreview);
+                // Manual preview update button
+                $('#update-preview').on('click', function() {
+                    updatePreview();
+                    $(this).find('.dashicons').addClass('spin');
+                    setTimeout(() => {
+                        $(this).find('.dashicons').removeClass('spin');
+                    }, 500);
+                });
 
                 // Initial preview
                 setTimeout(updatePreview, 1000);
 
-                // Update preview when switching between visual/text editor
-                $(document).on('click', '.wp-switch-editor', function() {
-                    setTimeout(updatePreview, 100);
-                });
+                // Add spin animation
+                $('<style>')
+                    .text('@keyframes spin { 100% { transform: rotate(360deg); } }' +
+                          '.spin { animation: spin 0.5s linear; }' +
+                          '.updating { padding: 20px; text-align: center; color: #666; }')
+                    .appendTo('head');
             });
             </script>
         </div>
