@@ -3,13 +3,18 @@
 // Enqueue QR code script properly
 wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array('jquery'), '1.0.0', true);
 
-// Example QR hash data for documentation
-$example_user = reset($users = get_users(['fields' => ['ID', 'user_login']]));
-$example_qr_data = json_encode([
-    'user_id' => $example_user->ID,
-    'timestamp' => time(),
-    'hash' => hash_hmac('sha256', $example_user->ID . time(), get_option('pbda_qr_secret'))
-], JSON_PRETTY_PRINT);
+// Get example user data properly
+$users = get_users(['fields' => ['ID', 'user_login']]);
+$example_user = !empty($users) ? $users[0] : null;
+$example_qr_data = '';
+
+if ($example_user) {
+    $example_qr_data = json_encode([
+        'user_id' => $example_user->ID,
+        'timestamp' => time(),
+        'hash' => hash_hmac('sha256', $example_user->ID . time(), get_option('pbda_qr_secret'))
+    ], JSON_PRETTY_PRINT);
+}
 
 ?>
 
