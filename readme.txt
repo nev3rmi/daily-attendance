@@ -4,7 +4,7 @@ Tags: attendance, qr code, staff management, employee tracking
 Requires at least: 6.0
 Tested up to: 6.7.2
 Requires PHP: 8.0
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://github.com/nev3rmi/daily-attendance
@@ -47,6 +47,13 @@ Detailed documentation is available at [https://github.com/nev3rmi/daily-attenda
 4. Use shortcode [attendance_form] to display manual attendance form
 
 == Changelog ==
+
+= 1.0.5 = 
+* Reorganized asset files structure
+* Added front/js directory for better organization  
+* Added front/css directory for stylesheets
+* Improved file organization and structure
+* Various minor improvements
 
 = 1.0.4 =
 * Added customizable email templates

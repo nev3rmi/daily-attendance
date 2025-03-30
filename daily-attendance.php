@@ -3,7 +3,7 @@
  * Plugin Name: QR Code Attendance System
  * Plugin URI:  https://github.com/nev3rmi/daily-attendance
  * Description: Modern attendance tracking system with QR code support and mobile-friendly interface
- * Version:     1.0.4
+ * Version:     1.0.5
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Tested up to: 6.7.2
