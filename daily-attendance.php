@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name: QR Code Attendance System
- * Plugin URI:  https://toho.vn/plugins/daily-qr-attendance
+ * Plugin URI:  https://github.com/nev3rmi/daily-attendance
  * Description: Modern attendance tracking system with QR code support and mobile-friendly interface
  * Version:     1.0.4
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Tested up to: 6.7.2
  * Author:      NeV3RmI
- * Author URI:  https://toho.vn/
+ * Author URI:  https://github.com/nev3rmi/
  * Text Domain: daily-attendance
  * Domain Path: /languages
  * License: GPLv2 or later
@@ -157,7 +157,7 @@ add_action('admin_menu', function() use ($dailyAttendance) {
 // Add new filter for plugin row meta
 add_filter('plugin_row_meta', function($links, $file) {
     if (plugin_basename(__FILE__) === $file) {
-        $links[2] = '<a href="https://toho.vn/plugins/daily-qr-attendance" target="_blank">View details</a>';
+        $links[2] = '<a href="https://github.com/nev3rmi/daily-attendance" target="_blank">View details</a>';
     }
     return $links;
 }, 10, 2);

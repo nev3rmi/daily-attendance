@@ -7,7 +7,7 @@ Requires PHP: 8.0
 Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Plugin URI: https://toho.vn/plugins/daily-qr-attendance
+Plugin URI: https://github.com/nev3rmi/daily-attendance
 
 Modern attendance tracking system with QR code support and mobile-friendly interface.
 
@@ -29,11 +29,11 @@ QR Code Attendance System is a modern solution for tracking attendance in organi
 
 === Professional Support ===
 
-For professional support and feature requests, please visit our [official website](https://toho.vn/plugins/daily-attendance).
+For professional support and feature requests, please visit our [official repository](https://github.com/nev3rmi/daily-attendance).
 
 === Documentation ===
 
-Detailed documentation is available at [https://toho.vn/docs/daily-attendance](https://toho.vn/docs/daily-attendance).
+Detailed documentation is available at [https://github.com/nev3rmi/daily-attendance](https://github.com/nev3rmi/daily-attendance).
 
 === Requirements ===
 * WordPress 6.0 or higher
