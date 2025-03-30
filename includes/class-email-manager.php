@@ -27,6 +27,49 @@ class EmailManager {
         return $status;
     }
 
+    private static function parse_template($template, $user, $attendance_data, $report_title) {
+        $total_days = count($attendance_data);
+        
+        // Generate attendance table
+        ob_start();
+        ?>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 8px; border: 1px solid #ddd;">Date</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Day</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Time</th>
+            </tr>
+            <?php 
+            if (empty($attendance_data)) {
+                echo '<tr><td colspan="3" style="text-align: center; padding: 15px;">No attendance records found</td></tr>';
+            } else {
+                foreach ($attendance_data as $date => $data) {
+                    ?>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><?php echo date('F j, Y', strtotime($date)); ?></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><?php echo date('l', strtotime($date)); ?></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><?php echo $data['time']; ?></td>
+                    </tr>
+                    <?php
+                }
+            }
+            ?>
+        </table>
+        <?php
+        $attendance_table = ob_get_clean();
+
+        $replacements = array(
+            '[title]' => $report_title,
+            '[username]' => $user->display_name,
+            '[email]' => $user->user_email,
+            '[attendance_table]' => $attendance_table,
+            '[total_days]' => $total_days,
+            '[date]' => date_i18n(get_option('date_format'))
+        );
+
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
     public static function send_attendance_report(int $user_id, array $attendance_data, $report_id = null): array {
         $smtp_status = self::get_smtp_status();
         
@@ -74,42 +117,15 @@ class EmailManager {
             sprintf(__('Your Attendance Report for %s', 'daily-attendance'), $report_title) :
             sprintf(__('Your Attendance Report for %s', 'daily-attendance'), date('F Y'));
         
-        // Modified email template section
-        ob_start();
-        ?>
-        <h2><?php printf(__('Hello %s,', 'daily-attendance'), $user->display_name); ?></h2>
-        <p><?php _e('Here is your attendance report:', 'daily-attendance'); ?></p>
-        <table style="border-collapse: collapse; width: 100%;">
-            <tr style="background: #f8f9fa;">
-                <th style="padding: 8px; border: 1px solid #ddd;"><?php _e('Date', 'daily-attendance'); ?></th>
-                <th style="padding: 8px; border: 1px solid #ddd;"><?php _e('Day', 'daily-attendance'); ?></th>
-                <th style="padding: 8px; border: 1px solid #ddd;"><?php _e('Time', 'daily-attendance'); ?></th>
-            </tr>
-            <?php 
-            if (empty($attendance_data)) {
-                echo '<tr><td colspan="3" style="text-align: center; padding: 15px;">No attendance records found</td></tr>';
-            } else {
-                foreach ($attendance_data as $date => $data): ?>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd;"><?php echo date('F j, Y', strtotime($date)); ?></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;"><?php echo date('l', strtotime($date)); ?></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;"><?php echo $data['time']; ?></td>
-                </tr>
-                <?php endforeach;
-            } ?>
-        </table>
-        <?php if (!empty($attendance_data)): ?>
-        <p style="color: #666; font-size: 0.9em; margin-top: 15px;">
-            <?php 
-            printf(
-                __('Total Days Present: %d', 'daily-attendance'), 
-                count($attendance_data)
-            ); 
-            ?>
-        </p>
-        <?php endif; ?>
-        <?php
-        $message = ob_get_clean();
+        $template = get_option('pbda_email_template');
+        if (empty($template)) {
+            // Load default template from SettingsManager
+            require_once PBDA_PLUGIN_DIR . 'includes/class-settings-manager.php';
+            $settings = new SettingsManager();
+            $template = $settings->get_default_template();
+        }
+
+        $message = self::parse_template($template, $user, $attendance_data, $report_title);
 
         error_log("Attempting to send email to: " . $user->user_email);
 

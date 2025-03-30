@@ -31,12 +31,14 @@ require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-email-manager.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-settings-manager.php');
 
 /**
  * Class DailyAttendance
  */
 class DailyAttendance {
     private $asset_manager;
+    private $settings_manager;
     private static $qr_secret;
 
     /**
@@ -47,6 +49,7 @@ class DailyAttendance {
             wp_die('AssetManager class not found. Please check if the plugin is installed correctly.');
         }
         $this->asset_manager = new AssetManager();
+        $this->settings_manager = new SettingsManager();
         $this->init_hooks();
         self::$qr_secret = get_option('pbda_qr_secret');
         if (empty(self::$qr_secret)) {
