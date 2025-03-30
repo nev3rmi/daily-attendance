@@ -109,7 +109,7 @@ jQuery(document).ready(function($) {
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
             { facingMode: "environment" },
-            { fps: 5, qrbox: { width: 250, height: 250 } },
+            { fps: 5, qrbox: { width: 50, height: 50 } },
             onScanSuccess,
             onScanFailure
         ).catch(err => {
