@@ -243,6 +243,22 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			) );
 		}
 
+		private function verify_api_key(): bool {
+			$api_key = '';
+			
+			// Check header first
+			$headers = getallheaders();
+			if (isset($headers['X-API-Key'])) {
+				$api_key = $headers['X-API-Key'];
+			}
+			
+			// Check GET parameter if not in header
+			if (empty($api_key) && isset($_GET['api_key'])) {
+				$api_key = $_GET['api_key'];
+			}
+			
+			return $api_key === get_option('pbda_api_key', '');
+		}
 
 		public function register_api(): void {
 			register_rest_route('v1', '/attendances/submit', array(
@@ -273,9 +289,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
-				'permission_callback' => function() {
-					return is_user_logged_in() && current_user_can('manage_options');
-				},
+				'permission_callback' => array($this, 'verify_api_key'),
 				'args' => array(
 					'report_id' => array(
 						'required' => true,
@@ -290,7 +304,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			register_rest_route('v1', '/send-report', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report'),
-				'permission_callback' => array($this, 'check_admin_permission'),
+				'permission_callback' => array($this, 'verify_api_key'),
 				'args' => array(
 					'user_id' => array(
 						'required' => true,
@@ -302,6 +316,21 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					)
 				)
 			));
+
+			// Add regenerate API key endpoint
+			add_action('wp_ajax_regenerate_api_key', array($this, 'regenerate_api_key'));
+		}
+
+		public function regenerate_api_key(): void {
+			check_ajax_referer('pbda_regenerate_api_key', 'nonce');
+			
+			if (!current_user_can('manage_options')) {
+				wp_send_json_error('Permission denied');
+			}
+			
+			$new_key = wp_generate_password(32, false);
+			update_option('pbda_api_key', $new_key);
+			wp_send_json_success();
 		}
 
 		public function check_admin_permission(): bool {

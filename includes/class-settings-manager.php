@@ -389,16 +389,21 @@ class SettingsManager {
     }
 
     private function render_api_documentation() {
-        // Get example data for documentation
         $example_user = reset(get_users(['fields' => ['ID', 'user_login']]));
         $example_hash = $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash';
-        $current_site_url = get_site_url();
-        $nonce = wp_create_nonce('wp_rest');
-        
+        $api_key = get_option('pbda_api_key', '');
+        if (empty($api_key)) {
+            $api_key = wp_generate_password(32, false);
+            update_option('pbda_api_key', $api_key);
+        }
         ?>
         <div class="api-documentation">
-            <h2><?php esc_html_e('API Documentation', 'daily-attendance'); ?></h2>
-            
+            <div class="api-key-section">
+                <h3>API Key</h3>
+                <p><strong>Your API Key:</strong> <code><?php echo esc_html($api_key); ?></code></p>
+                <button id="regenerate-api-key" class="button">Regenerate API Key</button>
+            </div>
+
             <div class="api-section">
                 <h3>1. Mark Attendance</h3>
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/attendances/submit')); ?></code></p>
@@ -431,45 +436,24 @@ curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
                 <h3>2. Export Report to CSV</h3>
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
                 <p><strong>Method:</strong> GET</p>
-                <p><strong>Required:</strong> Admin authentication (nonce)</p>
+                <p><strong>Required:</strong> API Key authentication</p>
                 <pre><code class="language-bash"># Using cURL
-curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?_wpnonce=<?php echo $nonce; ?>" \
-     -H "Cookie: wordpress_logged_in_[your_cookie]"</code></pre>
+curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?api_key=<?php echo esc_attr($api_key); ?>"</code></pre>
             </div>
 
             <div class="api-section">
                 <h3>3. Send Attendance Report</h3>
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
-                <p><strong>Required:</strong> Admin authentication</p>
-                
-                <?php
-                // Get example report for documentation
-                $example_report = get_posts(array(
-                    'post_type' => 'da_reports',
-                    'posts_per_page' => 1,
-                    'orderby' => 'meta_value',
-                    'meta_key' => '_month',
-                    'order' => 'DESC'
-                ));
-                $example_report_id = !empty($example_report) ? $example_report[0]->ID : '123';
-                ?>
-
+                <p><strong>Required:</strong> API Key authentication</p>
                 <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
-     -H "X-WP-Nonce: <?php echo wp_create_nonce('wp_rest'); ?>" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-    "report_id": <?php echo $example_report_id; ?>  // ID of an existing attendance report
+    "report_id": 123  // ID of an existing attendance report
 }'</code></pre>
-
-                <p><strong>Available Reports:</strong></p>
-                <pre><code class="language-bash"># Get list of available reports
-curl -X GET "<?php echo esc_url(site_url()); ?>/wp-json/wp/v2/da_reports" \
-     -H "X-WP-Nonce: <?php echo wp_create_nonce('wp_rest'); ?>"</code></pre>
-                
-                <p class="api-note">Note: The report_id must correspond to an existing attendance report post ID. Use the reports endpoint above to get a list of available reports.</p>
             </div>
 
             <div class="api-section">
@@ -545,6 +529,23 @@ fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
             }
             </style>
         </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('#regenerate-api-key').on('click', function() {
+                if (confirm('Are you sure? This will invalidate your existing API key.')) {
+                    $.post(ajaxurl, {
+                        action: 'regenerate_api_key',
+                        nonce: '<?php echo wp_create_nonce("pbda_regenerate_api_key"); ?>'
+                    }, function(response) {
+                        if (response.success) {
+                            location.reload();
+                        }
+                    });
+                }
+            });
+        });
+        </script>
         <?php
     }
 
