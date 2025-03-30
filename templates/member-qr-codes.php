@@ -149,6 +149,8 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
         <h3><?php esc_html_e('Email Debug Log', 'daily-attendance'); ?></h3>
         <div id="debug-log-content"></div>
     </div>
+
+    testsetsets
 </div>
 
 <style>
