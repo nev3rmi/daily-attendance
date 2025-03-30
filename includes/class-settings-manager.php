@@ -130,233 +130,242 @@ class SettingsManager {
 
     public function render_settings_page() {
         if (!current_user_can('manage_options')) return;
+        
+        $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'email';
+        $tabs = array(
+            'email' => __('Email Templates', 'daily-attendance'),
+            'notification' => __('Notifications', 'daily-attendance'),
+            'advanced' => __('Advanced', 'daily-attendance')
+        );
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
             <nav class="nav-tab-wrapper">
                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
-                    <!-- ...existing tab code... -->
+                    <a href="?post_type=da_reports&page=<?php echo $this->settings_page; ?>&tab=<?php echo $tab_key; ?>" 
+                       class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
+                        <?php echo esc_html($tab_name); ?>
+                    </a>
                 <?php endforeach; ?>
             </nav>
 
-            <?php if ($current_tab === 'email'): ?>
-                <div class="pbda-settings-layout">
-                    <!-- Left side: Edit forms -->
-                    <div class="pbda-edit-section">
-                        <form action="options.php" method="post">
-                            <?php settings_fields($this->option_group); ?>
-                            
-                            <!-- Subject Section -->
-                            <div class="template-section">
-                                <div class="template-edit">
-                                    <h3>Email Subject</h3>
-                                    <input type="text" 
-                                        name="pbda_email_subject" 
-                                        id="pbda_email_subject" 
-                                        value="<?php echo esc_attr(get_option('pbda_email_subject', $this->get_default_subject())); ?>" 
-                                        class="large-text">
-                                    
-                                    <div class="shortcode-info subject-shortcodes">
-                                        <p><strong>Available shortcodes for Subject:</strong></p>
-                                        <ul>
-                                            <li><code>[title]</code> - Report title</li>
-                                            <li><code>[username]</code> - User's display name</li>
-                                            <li><code>[date]</code> - Current date</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="template-preview">
-                                    <h3>Subject Preview</h3>
-                                    <div id="template-preview-subject">
-                                        <strong>Subject:</strong> <span></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Body Section -->
-                            <div class="template-section">
-                                <div class="template-edit">
-                                    <h3>Email Body Template</h3>
-                                    <?php wp_editor(get_option('pbda_email_template', $this->get_default_template()), 'pbda_email_template', array(
-                                        'textarea_name' => 'pbda_email_template',
-                                        'textarea_rows' => 20,
-                                        'media_buttons' => true,
-                                        'teeny' => false,
-                                        'tinymce' => true
-                                    )); ?>
-                                    
-                                    <div class="shortcode-info body-shortcodes">
-                                        <p><strong>Available shortcodes for Body:</strong></p>
-                                        <ul>
-                                            <li><code>[title]</code> - Report title</li>
-                                            <li><code>[username]</code> - User's display name</li>
-                                            <li><code>[email]</code> - User's email address</li>
-                                            <li><code>[attendance_table]</code> - Attendance data table</li>
-                                            <li><code>[total_days]</code> - Total days present</li>
-                                            <li><code>[date]</code> - Current date</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="template-preview">
-                                    <h3>Body Preview</h3>
-                                    <div id="template-preview-body"></div>
-                                </div>
-                            </div>
-
-                            <?php submit_button('Save Settings'); ?>
-                        </form>
-                    </div>
-                </div>
-
-                <style>
-                .template-section {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 30px;
-                    margin-bottom: 30px;
-                    padding: 20px;
-                    background: #fff;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                }
-                .template-edit, .template-preview {
-                    min-width: 400px;
-                }
-                .shortcode-info {
-                    margin-top: 15px;
-                    padding: 10px;
-                    background: #f8f9fa;
-                    border-left: 4px solid #2271b1;
-                }
-                .shortcode-info ul {
-                    margin: 5px 0 0 20px;
-                }
-                .shortcode-info li {
-                    margin: 5px 0;
-                }
-                #template-preview-subject {
-                    margin: 10px 0;
-                    padding: 15px;
-                    background: #f5f5f5;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                }
-                #template-preview-body {
-                    margin: 10px 0;
-                    padding: 20px;
-                    background: #fff;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    min-height: 400px;
-                }
-                .template-preview h3 {
-                    color: #666;
-                }
-                #update-preview {
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    z-index: 100;
-                    padding: 10px 20px;
-                }
-                </style>
-
-                <!-- Update Preview Button -->
-                <button type="button" id="update-preview" class="button button-primary">
-                    <span class="dashicons dashicons-update"></span> 
-                    Update Preview
-                </button>
-
-                <script>
-                jQuery(document).ready(function($) {
-                    function getExampleTable() {
-                        return `
-                            <table style="border-collapse: collapse; width: 100%;">
-                                <tr style="background: #f8f9fa;">
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Date</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Day</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Time</th>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">March 1, 2024</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">Friday</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">09:00 AM</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">March 2, 2024</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">Saturday</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">08:55 AM</td>
-                                </tr>
-                            </table>`;
-                    }
-
-                    function updatePreview() {
-                        // Add loading indicator
-                        $('#template-preview-body').html('<div class="updating">Updating preview...</div>');
-                        
-                        var subject = $('#pbda_email_subject').val() || '<?php echo esc_js($this->get_default_subject()); ?>';
-                        var bodyContent = '';
-                        
-                        // Get content from TinyMCE or textarea
-                        if (tinymce.get('pbda_email_template')) {
-                            bodyContent = tinymce.get('pbda_email_template').getContent();
-                        } else {
-                            bodyContent = $('#pbda_email_template').val();
-                        }
-
-                        if (!bodyContent) {
-                            bodyContent = '<?php echo esc_js($this->get_default_template()); ?>';
-                        }
-
-                        // Replace shortcodes
-                        subject = subject.replace(/\[username\]/g, 'John Doe')
-                                       .replace(/\[title\]/g, 'March 2024')
-                                       .replace(/\[date\]/g, new Date().toLocaleDateString());
-                        
-                        bodyContent = bodyContent.replace(/\[username\]/g, 'John Doe')
-                                               .replace(/\[title\]/g, 'March 2024')
-                                               .replace(/\[email\]/g, 'john@example.com')
-                                               .replace(/\[date\]/g, new Date().toLocaleDateString())
-                                               .replace(/\[total_days\]/g, '15')
-                                               .replace(/\[attendance_table\]/g, getExampleTable());
-                        
-                        $('#template-preview-subject span').text(subject);
-                        $('#template-preview-body').html(bodyContent);
-                    }
-
-                    // Manual preview update button
-                    $('#update-preview').on('click', function() {
-                        updatePreview();
-                        $(this).find('.dashicons').addClass('spin');
-                        setTimeout(() => {
-                            $(this).find('.dashicons').removeClass('spin');
-                        }, 500);
-                    });
-
-                    // Initial preview
-                    setTimeout(updatePreview, 1000);
-
-                    // Add spin animation
-                    $('<style>')
-                        .text('@keyframes spin { 100% { transform: rotate(360deg); } }' +
-                              '.spin { animation: spin 0.5s linear; }' +
-                              '.updating { padding: 20px; text-align: center; color: #666; }')
-                        .appendTo('head');
-                });
-                </script>
-            <?php elseif ($current_tab === 'notification'): ?>
-                <div class="pbda-settings-section">
-                    <h2>Notification Settings</h2>
-                    <p>Coming soon...</p>
-                </div>
-            <?php elseif ($current_tab === 'advanced'): ?>
-                <div class="pbda-settings-section">
-                    <h2>Advanced Settings</h2>
-                    <p>Coming soon...</p>
-                </div>
-            <?php endif; ?>
+            <div class="pbda-settings-content">
+                <?php 
+                // Only show email settings for now
+                $this->render_email_settings();
+                ?>
+            </div>
         </div>
+        <?php
+    }
+
+    private function render_email_settings() {
+        ?>
+        <div class="pbda-settings-layout">
+            <!-- Left side: Edit forms -->
+            <div class="pbda-edit-section">
+                <form action="options.php" method="post">
+                    <?php settings_fields($this->option_group); ?>
+                    
+                    <!-- Subject Section -->
+                    <div class="template-section">
+                        <div class="template-edit">
+                            <h3>Email Subject</h3>
+                            <input type="text" 
+                                name="pbda_email_subject" 
+                                id="pbda_email_subject" 
+                                value="<?php echo esc_attr(get_option('pbda_email_subject', $this->get_default_subject())); ?>" 
+                                class="large-text">
+                            
+                            <div class="shortcode-info subject-shortcodes">
+                                <p><strong>Available shortcodes for Subject:</strong></p>
+                                <ul>
+                                    <li><code>[title]</code> - Report title</li>
+                                    <li><code>[username]</code> - User's display name</li>
+                                    <li><code>[date]</code> - Current date</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="template-preview">
+                            <h3>Subject Preview</h3>
+                            <div id="template-preview-subject">
+                                <strong>Subject:</strong> <span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Body Section -->
+                    <div class="template-section">
+                        <div class="template-edit">
+                            <h3>Email Body Template</h3>
+                            <?php wp_editor(get_option('pbda_email_template', $this->get_default_template()), 'pbda_email_template', array(
+                                'textarea_name' => 'pbda_email_template',
+                                'textarea_rows' => 20,
+                                'media_buttons' => true,
+                                'teeny' => false,
+                                'tinymce' => true
+                            )); ?>
+                            
+                            <div class="shortcode-info body-shortcodes">
+                                <p><strong>Available shortcodes for Body:</strong></p>
+                                <ul>
+                                    <li><code>[title]</code> - Report title</li>
+                                    <li><code>[username]</code> - User's display name</li>
+                                    <li><code>[email]</code> - User's email address</li>
+                                    <li><code>[attendance_table]</code> - Attendance data table</li>
+                                    <li><code>[total_days]</code> - Total days present</li>
+                                    <li><code>[date]</code> - Current date</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="template-preview">
+                            <h3>Body Preview</h3>
+                            <div id="template-preview-body"></div>
+                        </div>
+                    </div>
+
+                    <?php submit_button('Save Settings'); ?>
+                </form>
+            </div>
+        </div>
+
+        <!-- Update Preview Button -->
+        <button type="button" id="update-preview" class="button button-primary">
+            <span class="dashicons dashicons-update"></span> 
+            Update Preview
+        </button>
+
+        <style>
+        .template-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .template-edit, .template-preview {
+            min-width: 400px;
+        }
+        .shortcode-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #2271b1;
+        }
+        .shortcode-info ul {
+            margin: 5px 0 0 20px;
+        }
+        .shortcode-info li {
+            margin: 5px 0;
+        }
+        #template-preview-subject {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #template-preview-body {
+            margin: 10px 0;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 400px;
+        }
+        .template-preview h3 {
+            color: #666;
+        }
+        #update-preview {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            padding: 10px 20px;
+        }
+        </style>
+
+        <script>
+        jQuery(document).ready(function($) {
+            function getExampleTable() {
+                return `
+                    <table style="border-collapse: collapse; width: 100%;">
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 8px; border: 1px solid #ddd;">Date</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Day</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Time</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd;">March 1, 2024</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">Friday</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">09:00 AM</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd;">March 2, 2024</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">Saturday</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">08:55 AM</td>
+                        </tr>
+                    </table>`;
+            }
+
+            function updatePreview() {
+                // Add loading indicator
+                $('#template-preview-body').html('<div class="updating">Updating preview...</div>');
+                
+                var subject = $('#pbda_email_subject').val() || '<?php echo esc_js($this->get_default_subject()); ?>';
+                var bodyContent = '';
+                
+                // Get content from TinyMCE or textarea
+                if (tinymce.get('pbda_email_template')) {
+                    bodyContent = tinymce.get('pbda_email_template').getContent();
+                } else {
+                    bodyContent = $('#pbda_email_template').val();
+                }
+
+                if (!bodyContent) {
+                    bodyContent = '<?php echo esc_js($this->get_default_template()); ?>';
+                }
+
+                // Replace shortcodes
+                subject = subject.replace(/\[username\]/g, 'John Doe')
+                               .replace(/\[title\]/g, 'March 2024')
+                               .replace(/\[date\]/g, new Date().toLocaleDateString());
+                
+                bodyContent = bodyContent.replace(/\[username\]/g, 'John Doe')
+                                       .replace(/\[title\]/g, 'March 2024')
+                                       .replace(/\[email\]/g, 'john@example.com')
+                                       .replace(/\[date\]/g, new Date().toLocaleDateString())
+                                       .replace(/\[total_days\]/g, '15')
+                                       .replace(/\[attendance_table\]/g, getExampleTable());
+                
+                $('#template-preview-subject span').text(subject);
+                $('#template-preview-body').html(bodyContent);
+            }
+
+            // Manual preview update button
+            $('#update-preview').on('click', function() {
+                updatePreview();
+                $(this).find('.dashicons').addClass('spin');
+                setTimeout(() => {
+                    $(this).find('.dashicons').removeClass('spin');
+                }, 500);
+            });
+
+            // Initial preview
+            setTimeout(updatePreview, 1000);
+
+            // Add spin animation
+            $('<style>')
+                .text('@keyframes spin { 100% { transform: rotate(360deg); } }' +
+                      '.spin { animation: spin 0.5s linear; }' +
+                      '.updating { padding: 20px; text-align: center; color: #666; }')
+                .appendTo('head');
+        });
+        </script>
         <?php
     }
 }
