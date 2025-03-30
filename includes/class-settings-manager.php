@@ -21,6 +21,7 @@ class SettingsManager {
 
     public function register_settings() {
         register_setting($this->option_group, 'pbda_email_template');
+        register_setting($this->option_group, 'pbda_email_subject');
         
         add_settings_section(
             'pbda_email_section',
@@ -30,12 +31,36 @@ class SettingsManager {
         );
 
         add_settings_field(
+            'pbda_email_subject',
+            'Email Subject',
+            array($this, 'render_subject_field'),
+            $this->settings_page,
+            'pbda_email_section'
+        );
+
+        add_settings_field(
             'pbda_email_template',
-            'Email Template',
+            'Email Body Template',
             array($this, 'render_template_field'),
             $this->settings_page,
             'pbda_email_section'
         );
+    }
+
+    public function render_subject_field() {
+        $subject = get_option('pbda_email_subject', $this->get_default_subject());
+        ?>
+        <input type="text" 
+               name="pbda_email_subject" 
+               id="pbda_email_subject" 
+               value="<?php echo esc_attr($subject); ?>" 
+               class="large-text">
+        <p class="description">Available shortcodes: [title], [username], [date]</p>
+        <?php
+    }
+
+    private function get_default_subject() {
+        return 'Attendance Report for [title]';
     }
 
     public function render_section_info() {
@@ -86,9 +111,12 @@ class SettingsManager {
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
-            <div class="pbda-settings-preview" style="float: right; width: 300px; margin-left: 20px;">
+            <div class="pbda-settings-preview" style="float: right; width: 400px; margin-left: 20px;">
                 <h3>Template Preview</h3>
-                <div id="template-preview" style="border: 1px solid #ddd; padding: 15px; background: #fff;">
+                <div id="template-preview-subject" style="margin-bottom: 10px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd;">
+                    <strong>Subject:</strong> <span></span>
+                </div>
+                <div id="template-preview-body" style="border: 1px solid #ddd; padding: 15px; background: #fff;">
                 </div>
             </div>
 
@@ -102,23 +130,37 @@ class SettingsManager {
 
             <script>
             jQuery(document).ready(function($) {
-                // Live preview functionality
                 function updatePreview() {
+                    // Update subject preview
+                    var subject = $('#pbda_email_subject').val() || '<?php echo esc_js($this->get_default_subject()); ?>';
+                    subject = subject.replace('[username]', 'John Doe')
+                                   .replace('[title]', 'March 2024')
+                                   .replace('[date]', new Date().toLocaleDateString());
+                    $('#template-preview-subject span').text(subject);
+
+                    // Update body preview
                     if (tinymce.activeEditor) {
                         var content = tinymce.activeEditor.getContent();
-                        content = content.replace('[username]', 'John Doe')
-                                       .replace('[title]', 'March 2024')
-                                       .replace('[email]', 'john@example.com')
-                                       .replace('[date]', new Date().toLocaleDateString())
-                                       .replace('[total_days]', '15')
-                                       .replace('[attendance_table]', '<table style="width:100%;border-collapse:collapse"><tr><th>Date</th><th>Time</th></tr><tr><td>Mar 1</td><td>09:00 AM</td></tr><tr><td>Mar 2</td><td>08:55 AM</td></tr></table>');
-                        $('#template-preview').html(content);
+                        if (!content) {
+                            content = '<?php echo esc_js($this->get_default_template()); ?>';
+                        }
+                        content = content.replace(/\[username\]/g, 'John Doe')
+                                       .replace(/\[title\]/g, 'March 2024')
+                                       .replace(/\[email\]/g, 'john@example.com')
+                                       .replace(/\[date\]/g, new Date().toLocaleDateString())
+                                       .replace(/\[total_days\]/g, '15')
+                                       .replace(/\[attendance_table\]/g, '<table style="width:100%;border-collapse:collapse"><tr><th>Date</th><th>Time</th></tr><tr><td>Mar 1</td><td>09:00 AM</td></tr><tr><td>Mar 2</td><td>08:55 AM</td></tr></table>');
+                        $('#template-preview-body').html(content);
                     }
                 }
 
+                // Watch for subject changes
+                $('#pbda_email_subject').on('input', updatePreview);
+
+                // Watch for body changes
                 if (typeof tinymce !== 'undefined') {
                     tinymce.on('addeditor', function(e) {
-                        e.editor.on('change', updatePreview);
+                        e.editor.on('change keyup', updatePreview);
                     });
                 }
 

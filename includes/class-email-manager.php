@@ -113,15 +113,24 @@ class EmailManager {
             $debug_info['report_title'] = $report_title;
         }
 
-        $subject = $report_title ? 
-            sprintf(__('Your Attendance Report for %s', 'daily-attendance'), $report_title) :
-            sprintf(__('Your Attendance Report for %s', 'daily-attendance'), date('F Y'));
-        
-        $template = get_option('pbda_email_template');
-        if (empty($template)) {
-            // Load default template from SettingsManager
+        // Get email subject template
+        $subject_template = get_option('pbda_email_subject');
+        if (empty($subject_template)) {
             require_once PBDA_PLUGIN_DIR . 'includes/class-settings-manager.php';
             $settings = new SettingsManager();
+            $subject_template = $settings->get_default_subject();
+        }
+
+        // Parse subject template
+        $subject = str_replace(
+            ['[title]', '[username]', '[date]'],
+            [$report_title, $user->display_name, date_i18n(get_option('date_format'))],
+            $subject_template
+        );
+
+        // Get body template
+        $template = get_option('pbda_email_template');
+        if (empty($template)) {
             $template = $settings->get_default_template();
         }
 
