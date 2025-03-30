@@ -9,6 +9,7 @@ class SettingsManager {
     }
 
     public function add_settings_page() {
+        // Change priority to 9999 to make it appear last
         add_submenu_page(
             'edit.php?post_type=da_reports',
             'Settings',
@@ -16,7 +17,7 @@ class SettingsManager {
             'manage_options',
             $this->settings_page,
             array($this, 'render_settings_page'),
-            100  // High priority to keep at bottom
+            9999  // Very high priority to ensure it's last
         );
     }
 
@@ -129,46 +130,54 @@ class SettingsManager {
 
     public function render_settings_page() {
         if (!current_user_can('manage_options')) return;
-        
-        $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'email';
-        $tabs = array(
-            'email' => __('Email Templates', 'daily-attendance'),
-            'notification' => __('Notifications', 'daily-attendance'),
-            'advanced' => __('Advanced', 'daily-attendance')
-        );
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
             <nav class="nav-tab-wrapper">
                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
-                    <a href="?post_type=da_reports&page=<?php echo $this->settings_page; ?>&tab=<?php echo $tab_key; ?>" 
-                       class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
-                        <?php echo esc_html($tab_name); ?>
-                    </a>
+                    <!-- ...existing tab code... -->
                 <?php endforeach; ?>
             </nav>
 
             <?php if ($current_tab === 'email'): ?>
                 <div class="pbda-settings-layout">
-                    <div class="pbda-settings-content">
+                    <!-- Left side: Edit forms -->
+                    <div class="pbda-edit-section">
                         <form action="options.php" method="post">
-                            <?php 
-                            settings_fields($this->option_group);
-                            $this->render_section_info();
-                            ?>
-                            <div class="form-fields">
-                                <div class="form-field">
-                                    <label for="pbda_email_subject">Email Subject</label>
+                            <?php settings_fields($this->option_group); ?>
+                            
+                            <!-- Subject Section -->
+                            <div class="template-section">
+                                <div class="template-edit">
+                                    <h3>Email Subject</h3>
                                     <input type="text" 
                                         name="pbda_email_subject" 
                                         id="pbda_email_subject" 
                                         value="<?php echo esc_attr(get_option('pbda_email_subject', $this->get_default_subject())); ?>" 
                                         class="large-text">
+                                    
+                                    <div class="shortcode-info subject-shortcodes">
+                                        <p><strong>Available shortcodes for Subject:</strong></p>
+                                        <ul>
+                                            <li><code>[title]</code> - Report title</li>
+                                            <li><code>[username]</code> - User's display name</li>
+                                            <li><code>[date]</code> - Current date</li>
+                                        </ul>
+                                    </div>
                                 </div>
+                                <div class="template-preview">
+                                    <h3>Subject Preview</h3>
+                                    <div id="template-preview-subject">
+                                        <strong>Subject:</strong> <span></span>
+                                    </div>
+                                </div>
+                            </div>
 
-                                <div class="form-field">
-                                    <label for="pbda_email_template">Email Body Template</label>
+                            <!-- Body Section -->
+                            <div class="template-section">
+                                <div class="template-edit">
+                                    <h3>Email Body Template</h3>
                                     <?php wp_editor(get_option('pbda_email_template', $this->get_default_template()), 'pbda_email_template', array(
                                         'textarea_name' => 'pbda_email_template',
                                         'textarea_rows' => 20,
@@ -176,121 +185,89 @@ class SettingsManager {
                                         'teeny' => false,
                                         'tinymce' => true
                                     )); ?>
+                                    
+                                    <div class="shortcode-info body-shortcodes">
+                                        <p><strong>Available shortcodes for Body:</strong></p>
+                                        <ul>
+                                            <li><code>[title]</code> - Report title</li>
+                                            <li><code>[username]</code> - User's display name</li>
+                                            <li><code>[email]</code> - User's email address</li>
+                                            <li><code>[attendance_table]</code> - Attendance data table</li>
+                                            <li><code>[total_days]</code> - Total days present</li>
+                                            <li><code>[date]</code> - Current date</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="template-preview">
+                                    <h3>Body Preview</h3>
+                                    <div id="template-preview-body"></div>
                                 </div>
                             </div>
+
                             <?php submit_button('Save Settings'); ?>
                         </form>
-                    </div>
-
-                    <div class="pbda-preview-controls">
-                        <button type="button" id="update-preview" class="button button-secondary">
-                            <span class="dashicons dashicons-update"></span> 
-                            Update Preview
-                        </button>
-                    </div>
-
-                    <div class="pbda-settings-preview">
-                        <h3>Live Preview</h3>
-                        <div id="template-preview-subject">
-                            <strong>Subject:</strong> <span></span>
-                        </div>
-                        <div id="template-preview-body"></div>
                     </div>
                 </div>
 
                 <style>
-                .shortcode-info {
-                    display: flex;
+                .template-section {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
                     gap: 30px;
-                    margin: 20px 0;
-                }
-                .shortcode-subject, .shortcode-body {
-                    flex: 1;
+                    margin-bottom: 30px;
+                    padding: 20px;
                     background: #fff;
-                    padding: 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                }
+                .template-edit, .template-preview {
+                    min-width: 400px;
+                }
+                .shortcode-info {
+                    margin-top: 15px;
+                    padding: 10px;
+                    background: #f8f9fa;
                     border-left: 4px solid #2271b1;
                 }
-                .pbda-settings-layout {
-                    display: grid;
-                    grid-template-columns: 1fr auto 1fr;
-                    gap: 20px;
-                    margin-top: 20px;
+                .shortcode-info ul {
+                    margin: 5px 0 0 20px;
                 }
-                .pbda-preview-controls {
-                    align-self: center;
-                    padding: 20px;
-                }
-                #update-preview {
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    padding: 10px 20px;
-                }
-                .shortcode-list {
-                    list-style: none;
-                    margin: 10px 0;
-                    columns: 2;
-                }
-                .shortcode-list li {
-                    margin-bottom: 8px;
-                }
-                .pbda-settings-container {
-                    display: flex;
-                    gap: 20px;
-                    margin-top: 20px;
-                    position: relative;
-                }
-                .pbda-settings-form {
-                    flex: 1;
-                    min-width: 500px;
-                }
-                .pbda-preview-controls {
-                    position: sticky;
-                    top: 32px;
-                    z-index: 100;
-                    background: #f0f0f1;
-                    padding: 10px;
-                    border-radius: 4px;
-                    text-align: center;
-                }
-                #update-preview {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 5px;
-                }
-                #update-preview .dashicons {
-                    margin-top: 3px;
-                }
-                .pbda-settings-preview {
-                    flex: 1;
-                    min-width: 400px;
-                    position: sticky;
-                    top: 100px;
+                .shortcode-info li {
+                    margin: 5px 0;
                 }
                 #template-preview-subject {
-                    margin-bottom: 15px;
-                    padding: 10px;
+                    margin: 10px 0;
+                    padding: 15px;
                     background: #f5f5f5;
                     border: 1px solid #ddd;
                     border-radius: 4px;
                 }
                 #template-preview-body {
-                    border: 1px solid #ddd;
+                    margin: 10px 0;
                     padding: 20px;
                     background: #fff;
+                    border: 1px solid #ddd;
                     border-radius: 4px;
                     min-height: 400px;
                 }
-                .form-field {
-                    margin-bottom: 20px;
+                .template-preview h3 {
+                    color: #666;
                 }
-                .form-field label {
-                    display: block;
-                    margin-bottom: 5px;
-                    font-weight: 500;
+                #update-preview {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 100;
+                    padding: 10px 20px;
                 }
                 </style>
+
+                <!-- Update Preview Button -->
+                <button type="button" id="update-preview" class="button button-primary">
+                    <span class="dashicons dashicons-update"></span> 
+                    Update Preview
+                </button>
+
                 <script>
                 jQuery(document).ready(function($) {
                     function getExampleTable() {
