@@ -51,7 +51,7 @@ if ( ! function_exists( 'pbda_get_attendance_report' ) ) {
 				}
 
 				if ( array_key_exists( $day, $attendances ) ) {
-					printf( '<td class="yes tt--top tt--info" aria-label="%s"><i class="icofont-check-alt"></i></td>', date( 'h:s A', $attendances[ $day ] ) );
+					printf( '<td class="yes tt--top tt--info" aria-label="%s"><i class="icofont-check-alt"></i></td>', pbda_format_time( $attendances[ $day ] ) );
 				} else {
 					printf( '<td class="no"></td>' );
 				}
@@ -145,11 +145,15 @@ if ( ! function_exists( 'pbda_insert_attendance' ) ) {
 			return new WP_Error( 'duplicate', sprintf( esc_html__( 'Hello %s, There is an entry for you today!', 'daily-attendance' ), $user->display_name ) );
 		}
 
+		// Get WordPress timezone setting
+		$wp_timezone = wp_timezone();
+		$current_time = new DateTime('now', $wp_timezone);
+
 		$args = array(
 			'user_id'      => $user_id,
 			'report_id'    => $report_id,
-			'date'         => date( 'Y-m-d', current_time( 'timestamp' ) ),
-			'current_time' => current_time( 'timestamp' ),
+			'date'         => $current_time->format('Y-m-d'),
+			'current_time' => $current_time->getTimestamp(),
 		);
 
 		$response = add_post_meta( $report_id, 'pbda_attendance', $args );
@@ -263,4 +267,13 @@ if ( ! function_exists( 'pbda' ) ) {
 
 		return $pbda;
 	}
+}
+
+// Add a helper function to format time with timezone
+function pbda_format_time($timestamp) {
+    $wp_timezone = wp_timezone();
+    $date = new DateTime();
+    $date->setTimestamp($timestamp);
+    $date->setTimezone($wp_timezone);
+    return $date->format('h:i A');
 }
