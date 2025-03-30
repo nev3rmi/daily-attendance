@@ -107,21 +107,17 @@ class DailyAttendance {
 
     public function render_view_members_page(): void {
         $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
+        wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array(), '1.0.0', true);
         ?>
         <div class="wrap">
             <h1>View Members</h1>
             <div class="pbda-qr-grid">
-                <?php foreach ($users as $user): ?>
-                    <div class="pbda-qr-item">
-                        <h3><?php echo esc_html($user->user_login); ?></h3>
-                        <div class="pbda-qr-code">
-                            <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=<?php 
-                                echo urlencode($this->generate_qr_data($user->ID)); 
-                            ?>" alt="QR Code">
-                        </div>
-                        <p><?php echo esc_html($user->user_email); ?></p>
-                    </div>
-                <?php endforeach; ?>
+                <?php 
+                foreach ($users as $user) {
+                    $qr_data = $this->generate_qr_data($user->ID);
+                    include PBDA_PLUGIN_DIR . 'templates/member-qr-code.php';
+                }
+                ?>
             </div>
         </div>
         <?php
