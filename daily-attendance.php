@@ -28,59 +28,35 @@ define( 'PBDA_PLUGIN_FILE', plugin_basename( __FILE__ ) );
  * Class DailyAttendance
  */
 class DailyAttendance {
+    private $asset_manager;
 
-	/**
-	 * DailyAttendance constructor.
-	 */
-	public function __construct() {
+    /**
+     * DailyAttendance constructor.
+     */
+    public function __construct() {
+        $this->asset_manager = new AssetManager();
+        $this->load_dependencies();
+        $this->init_hooks();
+    }
 
-		$this->load_scripts();
-		$this->define_classes_functions();
-	}
+    /**
+     * Loading dependencies
+     */
+    private function load_dependencies(): void {
+        require_once(PBDA_PLUGIN_DIR . 'includes/class-asset-manager.php');
+        require_once(PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php');
+        require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
+        require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
+        require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
+    }
 
-
-	/**
-	 * Loading classes and functions
-	 */
-	public function define_classes_functions(): void {
-
-		require_once( PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php' );
-
-		require_once( PBDA_PLUGIN_DIR . 'includes/functions.php' );
-		require_once( PBDA_PLUGIN_DIR . 'includes/class-functions.php' );
-		require_once( PBDA_PLUGIN_DIR . 'includes/class-hooks.php' );
-	}
-
-	/**
-	 * Loading scripts to backend
-	 */
-	public function admin_scripts(): void {
-
-		wp_enqueue_style( 'tooltip', PBDA_PLUGIN_URL . 'assets/tool-tip.min.css' );
-		wp_enqueue_style( 'icofont', PBDA_PLUGIN_URL . 'assets/fonts/icofont.min.css' );
-		wp_enqueue_style( 'pbda_admin_style', PBDA_PLUGIN_URL . 'assets/admin/css/style.css' );
-	}
-
-
-	/**
-	 * Loading scripts to the frontend
-	 */
-	public function front_scripts(): void {
-
-		wp_enqueue_style( 'tooltip', PBDA_PLUGIN_URL . 'assets/tool-tip.min.css' );
-		wp_enqueue_style( 'icofont', PBDA_PLUGIN_URL . 'assets/fonts/icofont.min.css' );
-		wp_enqueue_style( 'pbda_style', PBDA_PLUGIN_URL . 'assets/front/css/style.css' );
-	}
-
-
-	/**
-	 * Loading scripts
-	 */
-	public function load_scripts(): void {
-
-		add_action( 'wp_enqueue_scripts', [ $this, 'front_scripts' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'admin_scripts' ] );
-	}
+    /**
+     * Initializing hooks
+     */
+    private function init_hooks(): void {
+        add_action('wp_enqueue_scripts', [$this->asset_manager, 'enqueue_frontend_assets']);
+        add_action('admin_enqueue_scripts', [$this->asset_manager, 'enqueue_admin_assets']);
+    }
 }
 
 new DailyAttendance();
