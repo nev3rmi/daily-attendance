@@ -125,15 +125,22 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 
 		public function serve_attendances_submit(WP_REST_Request $request): WP_REST_Response {
-			// Get parameters, try both JSON and form data
-			$params = $request->get_json_params();
-			if (empty($params)) {
-				$params = $request->get_params();
+			// Get raw input
+			$json = file_get_contents('php://input');
+			$params = json_decode($json, true);
+
+			// Fallback to other methods if JSON parsing fails
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				$params = $request->get_json_params();
+				if (empty($params)) {
+					$params = $request->get_params();
+				}
 			}
-			
-			// Debug log
-			error_log('Request params: ' . print_r($params, true));
-			error_log('Content type: ' . $request->get_content_type()['value']);
+
+			// Debug logging
+			error_log('Raw input: ' . $json);
+			error_log('Parsed params: ' . print_r($params, true));
+			error_log('Request headers: ' . print_r(getallheaders(), true));
 
 			// Check for hash authentication first 
 			$hash = isset($params['hash']) ? sanitize_text_field($params['hash']) : '';
@@ -240,9 +247,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						'required' => false,
 						'type' => 'integer',
 					)
-					),
-					// Add content type validation
-					'content_type' => ['application/json', 'text/plain'],
+					)
 			));
 		}
 

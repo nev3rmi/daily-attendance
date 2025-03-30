@@ -43,6 +43,7 @@ if ($example_user) {
             <pre><code>// Using curl
 curl -X POST <?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?> \
 -H "Content-Type: application/json" \
+-H "Accept: application/json" \
 -d '{
     "userName": "john_doe",
     "passWord": "your_password"
@@ -52,13 +53,14 @@ curl -X POST <?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>
 fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     },
     body: JSON.stringify({
         userName: 'john_doe',
         passWord: 'your_password'
     })
-});</code></pre>
+}).then(r => r.json()).then(console.log);</code></pre>
         </div>
 
         <div class="api-response">
