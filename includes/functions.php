@@ -101,7 +101,7 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 		foreach ($attendance_meta as $item) {
 			$this_user_id = isset($item['user_id']) ? $item['user_id'] : '';
 			$this_date = isset($item['date']) ? $item['date'] : '';
-			$this_time = isset($item['current_time']) ? $item['current_time'] : '';
+			$this_time = isset($item['current_time']) ? (int)$item['current_time'] : 0;
 
 			if (empty($this_user_id) || $this_user_id === 0 || empty($this_date) || $this_user_id != $user_id) {
 				continue;
@@ -119,7 +119,7 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 			$attendances[$this_day] = [
 				'timestamp' => $this_time,
 				'date' => sprintf('%s-%s-%02d', $this_year, $this_month, $this_day),
-				'time' => date('h:i A', $this_time)
+				'time' => pbda_format_time($this_time)
 			];
 		}
 
@@ -281,7 +281,18 @@ if ( ! function_exists( 'pbda' ) ) {
 }
 
 // Add a helper function to format time with timezone
-function pbda_format_time($timestamp) {
+function pbda_format_time($attendance_data) {
+    // Check if we're getting array or timestamp
+    if (is_array($attendance_data)) {
+        $timestamp = isset($attendance_data['timestamp']) ? $attendance_data['timestamp'] : 0;
+    } else {
+        $timestamp = (int)$attendance_data;
+    }
+
+    if (empty($timestamp)) {
+        return 'N/A';
+    }
+
     $wp_timezone = wp_timezone();
     $date = new DateTime();
     $date->setTimestamp($timestamp);
