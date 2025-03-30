@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name: QR Code Attendance System
- * Plugin URI:  https://toho.vn/qr-attendance
+ * Plugin URI:  https://github.com/nev3rmi/daily-attendance
  * Description: Modern attendance tracking system with QR code support and mobile-friendly interface
- * Version:     1.0.2
+ * Version:     1.0.5
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Tested up to: 6.7.2
  * Author:      NeV3RmI
- * Author URI:  https://toho.vn/
+ * Author URI:  https://github.com/nev3rmi/
  * Text Domain: daily-attendance
  * Domain Path: /languages
  * License: GPLv2 or later
@@ -30,12 +30,15 @@ require_once(PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-email-manager.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-settings-manager.php');
 
 /**
  * Class DailyAttendance
  */
 class DailyAttendance {
     private $asset_manager;
+    private $settings_manager;
     private static $qr_secret;
 
     /**
@@ -46,6 +49,7 @@ class DailyAttendance {
             wp_die('AssetManager class not found. Please check if the plugin is installed correctly.');
         }
         $this->asset_manager = new AssetManager();
+        $this->settings_manager = new SettingsManager();
         $this->init_hooks();
         self::$qr_secret = get_option('pbda_qr_secret');
         if (empty(self::$qr_secret)) {
@@ -128,7 +132,7 @@ class DailyAttendance {
 
 // Define plugin version if not already defined
 if (!defined('PBDA_VERSION')) {
-    define('PBDA_VERSION', '1.0.2');
+    define('PBDA_VERSION', '1.0.4');
 }
 
 // Register activation hook
@@ -148,4 +152,20 @@ add_action('admin_menu', function() use ($dailyAttendance) {
         'view-members',                   // Menu slug
         [$dailyAttendance, 'render_view_members_page'] // Callback
     );
+});
+
+// Add new filter for plugin row meta
+add_filter('plugin_row_meta', function($links, $file) {
+    if (plugin_basename(__FILE__) === $file) {
+        $links[2] = '<a href="https://github.com/nev3rmi/daily-attendance" target="_blank">View details</a>';
+    }
+    return $links;
+}, 10, 2);
+
+// Add filter to modify the plugin details URL
+add_filter('self_admin_url', function($url) {
+    if (strpos($url, 'plugin=daily-attendance') !== false) {
+        $url = str_replace('plugin=daily-attendance', 'plugin=daily-qr-attendance', $url);
+    }
+    return $url;
 });

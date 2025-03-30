@@ -60,7 +60,7 @@ class AssetManager {
     private function enqueue_common_assets(): void {
         wp_enqueue_style(
             'tooltip',
-            PBDA_PLUGIN_URL . 'assets/tool-tip.min.css',
+            PBDA_PLUGIN_URL . 'assets/front/css/tool-tip.min.css',
             [],
             $this->version
         );
