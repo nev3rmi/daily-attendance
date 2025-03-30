@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: QR Code Attendance System
- * Plugin URI:  https://toho.vn/qr-attendance
+ * Plugin URI:  https://toho.vn/plugins/daily-qr-attendance
  * Description: Modern attendance tracking system with QR code support and mobile-friendly interface
  * Version:     1.0.4
  * Requires at least: 6.0

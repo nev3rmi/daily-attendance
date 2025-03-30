@@ -777,25 +777,31 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function ajax_export_attendance_csv(): void {
+			error_log('Export CSV request received');
+			error_log('POST data: ' . print_r($_POST, true));
+
 			// Verify nonce first
 			if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pbda_ajax_nonce')) {
+				error_log('Nonce verification failed');
 				wp_die('Invalid nonce');
 			}
 
 			if (!current_user_can('manage_options')) {
+				error_log('Permission denied for user');
 				wp_die('Permission denied');
 			}
 			
 			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+			error_log('Report ID: ' . $report_id);
+			
 			if (!$report_id) {
+				error_log('Invalid report ID');
 				wp_die('Invalid report ID');
 			}
 
 			// Load and use the ExportManager
 			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
 			ExportManager::generate_csv($report_id);
-			
-			// The script will end here as ExportManager::generate_csv() calls exit()
 		}
 	}
 

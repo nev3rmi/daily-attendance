@@ -7,7 +7,7 @@ Requires PHP: 8.0
 Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Plugin URI: https://toho.vn/plugins/daily-attendance
+Plugin URI: https://toho.vn/plugins/daily-qr-attendance
 
 Modern attendance tracking system with QR code support and mobile-friendly interface.
 
