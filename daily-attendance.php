@@ -153,3 +153,19 @@ add_action('admin_menu', function() use ($dailyAttendance) {
         [$dailyAttendance, 'render_view_members_page'] // Callback
     );
 });
+
+// Add new filter for plugin row meta
+add_filter('plugin_row_meta', function($links, $file) {
+    if (plugin_basename(__FILE__) === $file) {
+        $links[2] = '<a href="https://toho.vn/plugins/daily-qr-attendance" target="_blank">View details</a>';
+    }
+    return $links;
+}, 10, 2);
+
+// Add filter to modify the plugin details URL
+add_filter('self_admin_url', function($url) {
+    if (strpos($url, 'plugin=daily-attendance') !== false) {
+        $url = str_replace('plugin=daily-attendance', 'plugin=daily-qr-attendance', $url);
+    }
+    return $url;
+});
