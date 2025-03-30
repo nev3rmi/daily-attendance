@@ -106,52 +106,7 @@ class DailyAttendance {
     }
 
     public function render_view_members_page(): void {
-        $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
-        
-        // Properly enqueue scripts
-        wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array('jquery'), '1.0.0', true);
-        
-        // Add initialization script
-        $inline_script = "
-            jQuery(document).ready(function($) {
-                window.QRCode && [" . implode(',', array_map(function($user) {
-                    return sprintf('{id: %d, data: %s}', 
-                        $user->ID, 
-                        json_encode($this->generate_qr_data($user->ID))
-                    );
-                }, $users)) . "].forEach(function(item) {
-                    new QRCode(document.getElementById('qrcode-' + item.id), {
-                        text: item.data,
-                        width: 200,
-                        height: 200,
-                        colorDark: '#000000',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.L,
-                        margin: 4
-                    });
-                });
-            });";
-        
-        wp_add_inline_script('qrcode-js', $inline_script);
-        ?>
-        <div class="wrap">
-            <h1>View Members</h1>
-            <div class="pbda-qr-grid">
-                <?php 
-                foreach ($users as $user) {
-                    // Only output the container, JavaScript will populate it
-                    ?>
-                    <div class="pbda-qr-item">
-                        <h3><?php echo esc_html($user->user_login); ?></h3>
-                        <div class="pbda-qr-code" id="qrcode-<?php echo esc_attr($user->ID); ?>"></div>
-                        <p><?php echo esc_html($user->user_email); ?></p>
-                    </div>
-                    <?php
-                }
-                ?>
-            </div>
-        </div>
-        <?php
+        include PBDA_PLUGIN_DIR . 'templates/member-qr-codes.php';
     }
 
     private function generate_qr_data($user_id): string {
