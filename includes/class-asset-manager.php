@@ -20,7 +20,8 @@ class AssetManager {
         $this->enqueue_common_assets();
         wp_enqueue_style(
             'pbda_admin_style',
-            PBDA_PLUGIN_URL . 'assets/admin/css/style.css',
+            // Update path to use front/css instead of admin/css
+            PBDA_PLUGIN_URL . 'assets/front/css/style.css',
             [],
             $this->version
         );
