@@ -19,7 +19,8 @@ $submission_url = esc_url_raw(add_query_arg(array(
 
 // Enqueue required scripts
 wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array(), '1.0.0', true);
-wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode', [], null, true);
+// Updated to enqueue minified html5-qrcode version
+wp_enqueue_script('html5-qrcode', 'https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js', [], null, true);
 wp_enqueue_script('jquery');
 
 // Generate user QR data for old QR code (unchanged)
@@ -30,6 +31,8 @@ $qr_data = $submission_url;
     <div class="pbda-qr-left">
         <h2><?php esc_html_e('Scan a QR Code', 'daily-attendance'); ?></h2>
         <div id="reader" style="width: 300px; height: 300px; margin: 0 auto;"></div>
+        <!-- New result container below the scanner -->
+        <div id="scanResult" style="margin-top: 15px; font-size: 1.1em; color: green;"></div>
         <p class="qr-instructions"><?php esc_html_e('Point your camera at a QR code to mark attendance.', 'daily-attendance'); ?></p>
     </div>
     <div class="pbda-qr-right">
@@ -62,24 +65,40 @@ jQuery(document).ready(function($) {
                         data: JSON.stringify(qrData),
                         success: function(response) {
                             if (response.success) {
-                                alert('<?php esc_html_e('Attendance marked successfully!', 'daily-attendance'); ?>');
+                                // Update #scanResult with the success message (include user name if available)
+                                $('#scanResult').html(response.content);
+                                // Clear the result after 3 seconds
+                                setTimeout(function() {
+                                    $('#scanResult').html('');
+                                }, 3000);
                             } else {
-                                alert('<?php esc_html_e('Failed to mark attendance:', 'daily-attendance'); ?> ' + response.content);
+                                $('#scanResult').html('<?php esc_html_e('Attendance failed:', 'daily-attendance'); ?> ' + response.content);
+                                setTimeout(function() {
+                                    $('#scanResult').html('');
+                                }, 3000);
                             }
                         },
                         error: function() {
-                            alert('<?php esc_html_e('An error occurred while submitting attendance.', 'daily-attendance'); ?>');
+                            $('#scanResult').html('<?php esc_html_e('An error occurred while submitting attendance.', 'daily-attendance'); ?>');
+                            setTimeout(function() {
+                                $('#scanResult').html('');
+                            }, 3000);
                         }
                     });
                 } else {
-                    alert('<?php esc_html_e('Invalid QR code data.', 'daily-attendance'); ?>');
+                    $('#scanResult').html('<?php esc_html_e('Invalid QR code data.', 'daily-attendance'); ?>');
+                    setTimeout(function() {
+                        $('#scanResult').html('');
+                    }, 3000);
                 }
             } catch (e) {
-                alert('<?php esc_html_e('Failed to parse QR code data.', 'daily-attendance'); ?>');
+                $('#scanResult').html('<?php esc_html_e('Failed to parse QR code data.', 'daily-attendance'); ?>');
+                setTimeout(function() {
+                    $('#scanResult').html('');
+                }, 3000);
             }
         }
         function onScanFailure(error) {
-            // If the error indicates no code was detected at all
             if (error && error.indexOf("No MultiFormat Readers") !== -1) {
                 console.warn('No QR code detected. Please ensure the code is properly aligned and well-lit.');
             } else {
@@ -94,7 +113,7 @@ jQuery(document).ready(function($) {
             onScanFailure
         ).catch(err => {
             console.error('Failed to start QR Code scanner:', err);
-            alert('<?php esc_html_e('Failed to start camera. Please check permissions.', 'daily-attendance'); ?>');
+            $('#scanResult').html('<?php esc_html_e('Failed to start camera. Please check permissions.', 'daily-attendance'); ?>');
         });
     }
     initializeQrScanner();
