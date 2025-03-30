@@ -55,41 +55,16 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			if ( $column == 'actions' ):
 				$nonce = wp_create_nonce('wp_rest');
-					$rest_url = rest_url('v1/export-csv/' . $post_id);
-					?>
-					<button class="button export-csv" 
-							data-report="<?php echo esc_attr($post_id); ?>"
-							data-nonce="<?php echo esc_attr($nonce); ?>"
-							data-url="<?php echo esc_url($rest_url); ?>">
-						<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
-					</button>
-					<script>
-					jQuery(document).ready(function($) {
-						$('.export-csv').on('click', function(e) {
-							e.preventDefault();
-							const url = $(this).data('url');
-							const nonce = $(this).data('nonce');
-							
-							// Create and submit a form to handle the download
-							const form = $('<form>', {
-								'method': 'GET',
-								'action': url
-							});
-							
-							// Add REST nonce
-							form.append($('<input>', {
-								'type': 'hidden',
-								'name': '_wpnonce',
-								'value': nonce
-							}));
-							
-							$('body').append(form);
-							form.submit();
-							form.remove();
-						});
-					});
-					</script>
-					<?php
+				$export_url = rest_url("v1/export-csv/{$post_id}") . "?_wpnonce={$nonce}";
+				?>
+				<div class="row-actions">
+					<span class="export">
+						<a href="<?php echo esc_url($export_url); ?>">
+							<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+						</a>
+					</span>
+				</div>
+				<?php
 			endif;
 
 			if ( $column == 'created_on' ):
