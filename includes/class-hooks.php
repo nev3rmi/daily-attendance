@@ -267,8 +267,11 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function register_api(): void {
+			 // Add plugin prefix to namespace
+			 $namespace = 'daily-attendance/v1';
+
 			// Public endpoints (no API key required)
-			register_rest_route('v1', '/attendances/submit', array(
+			register_rest_route($namespace, '/attendances/submit', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'serve_attendances_submit'),
 				'permission_callback' => '__return_true',
@@ -293,7 +296,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			));
 
 			 // Admin endpoints (requires WP admin login)
-			 register_rest_route('v1', '/admin/reports', array(
+			 register_rest_route($namespace, '/admin/reports', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
@@ -301,7 +304,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				}
 			));
 		
-			register_rest_route('v1', '/admin/send-report-all', array(
+			register_rest_route($namespace, '/admin/send-report-all', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report_all'),
 				'permission_callback' => function() {
@@ -316,7 +319,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			));
 
 			 // API key endpoints
-			 register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
+			 register_rest_route($namespace, '/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
 				'permission_callback' => array($this, 'verify_api_key'),
@@ -331,7 +334,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				)
 			));
 
-			register_rest_route('v1', '/send-report', array(
+			register_rest_route($namespace, '/send-report', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report'),
 				'permission_callback' => array($this, 'verify_api_key'),
