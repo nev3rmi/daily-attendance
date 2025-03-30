@@ -47,7 +47,6 @@ class DailyAttendance {
         }
         $this->asset_manager = new AssetManager();
         $this->init_hooks();
-        $this->init_admin_menu();
         self::$qr_secret = get_option('pbda_qr_secret');
         if (empty(self::$qr_secret)) {
             self::$qr_secret = bin2hex(random_bytes(32));
@@ -63,55 +62,6 @@ class DailyAttendance {
         add_action('admin_enqueue_scripts', [$this->asset_manager, 'enqueue_admin_assets']);
         add_action('show_user_profile', [$this, 'add_qr_code_field']);
         add_action('edit_user_profile', [$this, 'add_qr_code_field']);
-    }
-
-    private function init_admin_menu(): void {
-        add_action('admin_menu', function() {
-            $parent_slug = 'daily-attendance';
-            
-            // Main menu
-            add_menu_page(
-                'Daily Attendance',         // Page title
-                'Daily Attendance',         // Menu title
-                'manage_options',           // Capability
-                $parent_slug,              // Menu slug
-                null,                      // Callback
-                'dashicons-id-alt',        // Icon
-                30                         // Position
-            );
-
-            // Add all submenus
-            $submenus = [
-                [
-                    'parent_slug' => $parent_slug,
-                    'page_title'  => 'Attendance Report',
-                    'menu_title'  => 'Report',
-                    'capability'  => 'manage_options',
-                    'menu_slug'   => $parent_slug,
-                    'callback'    => [$this, 'render_report_page']
-                ],
-                [
-                    'parent_slug' => $parent_slug,
-                    'page_title'  => 'View Members',
-                    'menu_title'  => 'View Members',
-                    'capability'  => 'manage_options',
-                    'menu_slug'   => 'view-members',
-                    'callback'    => [$this, 'render_view_members_page']
-                ]
-            ];
-
-            // Register all submenus
-            foreach ($submenus as $submenu) {
-                add_submenu_page(
-                    $submenu['parent_slug'],
-                    $submenu['page_title'],
-                    $submenu['menu_title'],
-                    $submenu['capability'],
-                    $submenu['menu_slug'],
-                    $submenu['callback']
-                );
-            }
-        });
     }
 
     public function add_qr_code_field($user): void {
@@ -201,4 +151,33 @@ if (!defined('PBDA_VERSION')) {
 // Register activation hook
 register_activation_hook(__FILE__, ['DailyAttendance', 'activate']);
 
-new DailyAttendance();
+// Instantiate DailyAttendance and store in a variable for callback use
+$dailyAttendance = new DailyAttendance();
+
+// Instantiate PB_Settings to handle the admin menu
+new PB_Settings([
+    'add_in_menu'      => true,
+    'menu_slug'        => 'daily-attendance',
+    'menu_name'        => 'Daily Attendance',
+    'menu_page_title'  => 'Daily Attendance Settings',
+    'position'         => 30,
+    'menu_icon'        => 'dashicons-id-alt',
+    'pages'            => [
+        'report' => [
+            'page_nav'      => 'Report',
+            'page_title'    => 'Attendance Report',
+            'callback'      => [$dailyAttendance, 'render_report_page'],
+            'priority'      => 1,
+            'page_settings' => [],
+            'show_submit'   => false,
+        ],
+        'view-members' => [
+            'page_nav'      => 'View Members',
+            'page_title'    => 'View Members',
+            'callback'      => [$dailyAttendance, 'render_view_members_page'],
+            'priority'      => 2,
+            'page_settings' => [],
+            'show_submit'   => false,
+        ]
+    ]
+]);
