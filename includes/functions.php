@@ -76,43 +76,54 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 	 * @return array|WP_Error
 	 */
 	function pbda_get_user_attendance( $user_id = false, $report_id = false ) {
+		error_log("Getting attendance for user $user_id from report $report_id");
 
 		$attendances = array();
-		$user_id     = $user_id ?: get_current_user_id();
-		$report_id   = $report_id ?: pbda_current_report_id();
+		$user_id = $user_id ?: get_current_user_id();
+		$report_id = $report_id ?: pbda_current_report_id();
 
-		if ( $user_id === 0 || $user_id === false ) {
-			return new WP_Error( 'invalid_user', esc_html__( 'Invalid user information', 'daily-attendance' ) );
+		if ($user_id === 0 || $user_id === false) {
+			error_log("Invalid user ID");
+			return new WP_Error('invalid_user', esc_html__('Invalid user information', 'daily-attendance'));
 		}
 
-		if ( $report_id === 0 || $report_id === false ) {
-			return new WP_Error( 'invalid_report', esc_html__( 'Something went wrong with Report ID', 'daily-attendance' ) );
+		if ($report_id === 0 || $report_id === false) {
+			error_log("Invalid report ID");
+			return new WP_Error('invalid_report', esc_html__('Something went wrong with Report ID', 'daily-attendance'));
 		}
 
-		$_month = pbda()->get_meta( '_month', $report_id );
+		$_month = get_post_meta($report_id, '_month', true);
+		error_log("Getting attendance for month: $_month");
 
-		foreach ( pbda()->get_meta( 'pbda_attendance', $report_id, array(), false ) as $item ) {
+		$attendance_meta = get_post_meta($report_id, 'pbda_attendance', false);
+		error_log("Raw attendance data: " . print_r($attendance_meta, true));
 
-			$this_user_id = isset( $item['user_id'] ) ? $item['user_id'] : '';
-			$this_date    = isset( $item['date'] ) ? $item['date'] : '';
-			$this_time    = isset( $item['current_time'] ) ? $item['current_time'] : '';
+		foreach ($attendance_meta as $item) {
+			$this_user_id = isset($item['user_id']) ? $item['user_id'] : '';
+			$this_date = isset($item['date']) ? $item['date'] : '';
+			$this_time = isset($item['current_time']) ? $item['current_time'] : '';
 
-			if ( empty( $this_user_id ) || $this_user_id === 0 || empty( $this_date ) || $this_date === 0 || $this_user_id != $user_id ) {
+			if (empty($this_user_id) || $this_user_id === 0 || empty($this_date) || $this_user_id != $user_id) {
 				continue;
 			}
 
-			$this_date  = explode( '-', $this_date );
-			$this_year  = isset( $this_date[0] ) ? $this_date[0] : '';
-			$this_month = isset( $this_date[1] ) ? $this_date[1] : '';
-			$this_day   = isset( $this_date[2] ) ? (int) $this_date[2] : '';
+			$this_date = explode('-', $this_date);
+			$this_year = isset($this_date[0]) ? $this_date[0] : '';
+			$this_month = isset($this_date[1]) ? $this_date[1] : '';
+			$this_day = isset($this_date[2]) ? (int)$this_date[2] : '';
 
-			if ( empty( $this_day ) || $this_day === 0 || $_month != sprintf( '%s%s', $this_year, $this_month ) ) {
+			if (empty($this_day) || $this_day === 0 || $_month != sprintf('%s%s', $this_year, $this_month)) {
 				continue;
 			}
 
-			$attendances[ $this_day ] = $this_time;
+			$attendances[$this_day] = [
+				'timestamp' => $this_time,
+				'date' => sprintf('%s-%s-%02d', $this_year, $this_month, $this_day),
+				'time' => date('h:i A', $this_time)
+			];
 		}
 
+		error_log("Processed attendance data: " . print_r($attendances, true));
 		return $attendances;
 	}
 }
@@ -284,24 +295,39 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
     }
 
     error_log("Sending attendance report for user $user_id from report $report_id");
+    
+    $user = get_user_by('id', $user_id);
+    if (!$user) {
+        return array(
+            'status' => 'error',
+            'message' => "User not found: $user_id",
+            'start_time' => current_time('Y-m-d H:i:s')
+        );
+    }
 
-    // If report_id is provided, get attendance for that specific report
-    // Otherwise get current month's attendance
+    // Get attendance data
     $attendances = pbda_get_user_attendance($user_id, $report_id);
     
     if (is_wp_error($attendances)) {
         error_log("Error getting attendance: " . $attendances->get_error_message());
-        return $attendances;
+        return array(
+            'status' => 'error',
+            'message' => $attendances->get_error_message(),
+            'start_time' => current_time('Y-m-d H:i:s')
+        );
     }
-
-    error_log("Retrieved attendances: " . print_r($attendances, true));
 
     // Format attendance data for email
-    $attendance_data = [];
-    foreach ($attendances as $day => $time) {
-        $date = date('Y-m-d', strtotime(date('Y-m-') . $day));
-        $attendance_data[$date] = $time;
+    $attendance_data = array();
+    foreach ($attendances as $day => $data) {
+        $attendance_data[$data['date']] = array(
+            'timestamp' => $data['timestamp'],
+            'time' => $data['time'],
+            'day' => $day
+        );
     }
+
+    error_log("Formatted attendance data: " . print_r($attendance_data, true));
 
     return EmailManager::send_attendance_report($user_id, $attendance_data, $report_id);
 }
