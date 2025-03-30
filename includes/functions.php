@@ -297,3 +297,20 @@ function pbda_send_attendance_report($user_id = false) {
 
     return EmailManager::send_attendance_report($user_id, $attendance_data);
 }
+
+function pbda_get_report_id_by_month($month) {
+    $args = array(
+        'post_type' => 'da_reports',
+        'posts_per_page' => 1,
+        'meta_query' => array(
+            array(
+                'key' => '_month',
+                'value' => $month,
+                'compare' => '='
+            )
+        )
+    );
+    
+    $query = new WP_Query($args);
+    return $query->have_posts() ? $query->posts[0]->ID : false;
+}

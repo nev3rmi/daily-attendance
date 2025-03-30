@@ -33,6 +33,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			add_filter('login_redirect', array($this, 'custom_login_redirect'), 10, 3);
 			add_action('template_redirect', array($this, 'handle_attendance_submission'));
 			add_action('wp_login', array($this, 'process_attendance_after_login'), 10, 2);
+			add_action('wp_ajax_send_attendance_report', array($this, 'ajax_send_attendance_report'));
 
 			add_shortcode( 'attendance_form', array( $this, 'display_attendance_form' ) );
 			add_shortcode('attendance_qr', array($this, 'display_qr_code'));
@@ -694,6 +695,33 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					wp_redirect($data['redirect_url']);
 					exit;
 				}
+			}
+		}
+
+		public function ajax_send_attendance_report(): void {
+			check_ajax_referer('pbda_send_report', 'nonce');
+			
+			if (!current_user_can('manage_options')) {
+				wp_send_json_error(__('Permission denied', 'daily-attendance'));
+			}
+
+			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+			$month = isset($_POST['month']) ? sanitize_text_field($_POST['month']) : date('Ym');
+			
+			// Get attendance data directly using month value
+			$report_id = pbda_get_report_id_by_month($month);
+			
+			if (!$report_id) {
+				wp_send_json_error(__('No attendance data found for this month', 'daily-attendance'));
+				return;
+			}
+
+			$sent = pbda_send_attendance_report($user_id, $report_id);
+			
+			if (is_wp_error($sent)) {
+				wp_send_json_error($sent->get_error_message());
+			} else {
+				wp_send_json_success(__('Report sent successfully', 'daily-attendance'));
 			}
 		}
 	}
