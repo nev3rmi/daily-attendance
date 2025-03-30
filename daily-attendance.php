@@ -67,35 +67,50 @@ class DailyAttendance {
 
     private function init_admin_menu(): void {
         add_action('admin_menu', function() {
+            $parent_slug = 'daily-attendance';
+            
             // Main menu
             add_menu_page(
                 'Daily Attendance',         // Page title
                 'Daily Attendance',         // Menu title
                 'manage_options',           // Capability
-                'attendance-dashboard',     // Menu slug
-                [$this, 'render_report_page'], // Callback
+                $parent_slug,              // Menu slug
+                null,                      // Callback
                 'dashicons-id-alt',        // Icon
                 30                         // Position
             );
-            
-            // Submenus
-            add_submenu_page(
-                'attendance-dashboard',    // Parent slug
-                'Attendance Report',       // Page title
-                'Report',                  // Menu title
-                'manage_options',          // Capability
-                'attendance-dashboard',    // Menu slug (same as parent for first submenu)
-                [$this, 'render_report_page']
-            );
-            
-            add_submenu_page(
-                'attendance-dashboard',
-                'View Members',
-                'View Members',
-                'manage_options',
-                'view-members',
-                [$this, 'render_view_members_page']
-            );
+
+            // Add all submenus
+            $submenus = [
+                [
+                    'parent_slug' => $parent_slug,
+                    'page_title'  => 'Attendance Report',
+                    'menu_title'  => 'Report',
+                    'capability'  => 'manage_options',
+                    'menu_slug'   => $parent_slug,
+                    'callback'    => [$this, 'render_report_page']
+                ],
+                [
+                    'parent_slug' => $parent_slug,
+                    'page_title'  => 'View Members',
+                    'menu_title'  => 'View Members',
+                    'capability'  => 'manage_options',
+                    'menu_slug'   => 'view-members',
+                    'callback'    => [$this, 'render_view_members_page']
+                ]
+            ];
+
+            // Register all submenus
+            foreach ($submenus as $submenu) {
+                add_submenu_page(
+                    $submenu['parent_slug'],
+                    $submenu['page_title'],
+                    $submenu['menu_title'],
+                    $submenu['capability'],
+                    $submenu['menu_slug'],
+                    $submenu['callback']
+                );
+            }
         });
     }
 
