@@ -125,10 +125,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 
 		public function serve_attendances_submit(WP_REST_Request $request): WP_REST_Response {
-			// Get JSON data from request
+			// Get parameters, try both JSON and form data
 			$params = $request->get_json_params();
+			if (empty($params)) {
+				$params = $request->get_params();
+			}
 			
-			// Check for hash authentication first
+			// Debug log
+			error_log('Request params: ' . print_r($params, true));
+			error_log('Content type: ' . $request->get_content_type()['value']);
+
+			// Check for hash authentication first 
 			$hash = isset($params['hash']) ? sanitize_text_field($params['hash']) : '';
 			$user_id = isset($params['user_id']) ? intval($params['user_id']) : 0;
 			$timestamp = isset($params['timestamp']) ? intval($params['timestamp']) : 0;
@@ -156,17 +163,20 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				}
 			}
 
-			// Fallback to username/password authentication
-			$user_name = isset($params['userName']) ? sanitize_text_field($params['userName']) : '';
-			$password = isset($params['passWord']) ? sanitize_text_field($params['passWord']) : '';
-			
-			if (empty($user_name) || empty($password)) {
-				return new WP_REST_Response(array(
-					'version' => 'V1',
-					'success' => false,
-					'content' => esc_html__('Invalid authentication method', 'daily-attendance'),
-				));
-			}
+			 // Username/password authentication
+			 $user_name = isset($params['userName']) ? sanitize_text_field($params['userName']) : '';
+			 $password = isset($params['passWord']) ? sanitize_text_field($params['passWord']) : '';
+			 
+			 if (empty($user_name) || empty($password)) {
+				 return new WP_REST_Response(array(
+					 'version' => 'V1',
+					 'success' => false,
+					 'content' => sprintf(
+						 'Invalid authentication method. Received: %s', 
+						 json_encode($params)
+					 )
+				 ));
+			 }
 
 			$current_user = wp_authenticate( $user_name, $password );
 
@@ -230,7 +240,9 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						'required' => false,
 						'type' => 'integer',
 					)
-				),
+					),
+					// Add content type validation
+					'content_type' => ['application/json', 'text/plain'],
 			));
 		}
 

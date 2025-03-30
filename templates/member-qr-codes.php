@@ -40,20 +40,25 @@ if ($example_user) {
 
         <div class="api-method">
             <h4><?php esc_html_e('API Usage Example:', 'daily-attendance'); ?></h4>
-            <pre><code>// Using fetch API
+            <pre><code>// Using curl
+curl -X POST <?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?> \
+-H "Content-Type: application/json" \
+-d '{
+    "userName": "john_doe",
+    "passWord": "your_password"
+}'
+
+// Or using fetch API
 fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-        hash: "generated_hash",
-        user_id: 123,
-        timestamp: <?php echo time(); ?>
+        userName: 'john_doe',
+        passWord: 'your_password'
     })
-})
-.then(response => response.json())
-.then(data => console.log(data));</code></pre>
+});</code></pre>
         </div>
 
         <div class="api-response">
