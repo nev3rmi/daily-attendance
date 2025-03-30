@@ -1,7 +1,7 @@
 <?php if (!defined('ABSPATH')) exit; 
 
 // Enqueue QR code script properly
-wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array('jquery'), '1.0.0', true);
+wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/front/js/qrcode.min.js', array('jquery'), '1.0.0', true);
 
 // Get example user data properly
 $users = get_users(['fields' => ['ID', 'user_login']]);

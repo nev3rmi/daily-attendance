@@ -1656,5 +1656,9 @@ if ( ! class_exists( 'PB_Settings' ) ) {
 
 			return apply_filters( 'pb_settings_option_value', $option_value, $option_id, $option );
 		}
+
+		private function render_settings_page() {
+			$logo_url = PBDA_PLUGIN_URL . 'assets/images/pb.png';
+		}
 	}
 }
