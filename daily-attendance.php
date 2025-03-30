@@ -23,7 +23,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'PBDA_PLUGIN_URL', WP_PLUGIN_URL . '/' . plugin_basename( dirname( __FILE__ ) ) . '/' );
 define( 'PBDA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PBDA_PLUGIN_FILE', plugin_basename( __FILE__ ) );
-define('PBDA_QR_SECRET', wp_generate_password(32, false));
 
 // Load dependencies first
 require_once(PBDA_PLUGIN_DIR . 'includes/class-asset-manager.php');
@@ -37,6 +36,7 @@ require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
  */
 class DailyAttendance {
     private $asset_manager;
+    private static $qr_secret;
 
     /**
      * DailyAttendance constructor.
@@ -48,6 +48,11 @@ class DailyAttendance {
         $this->asset_manager = new AssetManager();
         $this->init_hooks();
         $this->init_admin_menu();
+        self::$qr_secret = get_option('pbda_qr_secret');
+        if (empty(self::$qr_secret)) {
+            self::$qr_secret = bin2hex(random_bytes(32));
+            update_option('pbda_qr_secret', self::$qr_secret);
+        }
     }
 
     /**
@@ -121,8 +126,15 @@ class DailyAttendance {
         return json_encode([
             'user_id' => $user_id,
             'timestamp' => time(),
-            'hash' => hash_hmac('sha256', $user_id . time(), PBDA_QR_SECRET)
+            'hash' => hash_hmac('sha256', $user_id . time(), self::$qr_secret)
         ]);
+    }
+
+    public static function activate(): void {
+        $secret = get_option('pbda_qr_secret');
+        if (empty($secret)) {
+            add_option('pbda_qr_secret', bin2hex(random_bytes(32)));
+        }
     }
 }
 
@@ -130,5 +142,8 @@ class DailyAttendance {
 if (!defined('PBDA_VERSION')) {
     define('PBDA_VERSION', '1.0.2');
 }
+
+// Register activation hook
+register_activation_hook(__FILE__, ['DailyAttendance', 'activate']);
 
 new DailyAttendance();
