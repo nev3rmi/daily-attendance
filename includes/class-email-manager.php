@@ -4,8 +4,13 @@ class EmailManager {
         return class_exists('WPMailSMTP');
     }
 
-    public static function send_attendance_report(int $user_id, array $attendance_data): bool {
+    public static function send_attendance_report(int $user_id, array $attendance_data, $report_id = null): bool {
+        // Log start of email sending
+        error_log("Starting to send attendance report for user $user_id");
+        error_log("Attendance data: " . print_r($attendance_data, true));
+
         if (!self::is_wp_mail_smtp_active()) {
+            error_log("WP Mail SMTP is not active");
             add_action('admin_notices', function() {
                 ?>
                 <div class="notice notice-error">
@@ -18,9 +23,22 @@ class EmailManager {
         }
 
         $user = get_user_by('id', $user_id);
-        if (!$user) return false;
+        if (!$user) {
+            error_log("User not found: $user_id");
+            return false;
+        }
 
-        $subject = sprintf(__('Your Attendance Report for %s', 'daily-attendance'), date('F j, Y'));
+        // Get report title if report_id is provided
+        $report_title = '';
+        if ($report_id) {
+            $report = get_post($report_id);
+            $report_title = $report ? $report->post_title : '';
+            error_log("Report title: $report_title");
+        }
+
+        $subject = $report_title ? 
+            sprintf(__('Your Attendance Report for %s', 'daily-attendance'), $report_title) :
+            sprintf(__('Your Attendance Report for %s', 'daily-attendance'), date('F Y'));
         
         ob_start();
         ?>
@@ -41,9 +59,13 @@ class EmailManager {
         <?php
         $message = ob_get_clean();
 
+        error_log("Attempting to send email to: " . $user->user_email);
+
         add_filter('wp_mail_content_type', function() { return 'text/html'; });
         $sent = wp_mail($user->user_email, $subject, $message);
         remove_filter('wp_mail_content_type', function() { return 'text/html'; });
+
+        error_log("Email send result: " . ($sent ? 'Success' : 'Failed'));
 
         return $sent;
     }

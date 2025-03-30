@@ -278,15 +278,23 @@ function pbda_format_time($timestamp) {
     return $date->format('h:i A');
 }
 
-function pbda_send_attendance_report($user_id = false) {
+function pbda_send_attendance_report($user_id = false, $report_id = null) {
     if (!$user_id) {
         $user_id = get_current_user_id();
     }
 
-    $attendances = pbda_get_user_attendance($user_id);
+    error_log("Sending attendance report for user $user_id from report $report_id");
+
+    // If report_id is provided, get attendance for that specific report
+    // Otherwise get current month's attendance
+    $attendances = pbda_get_user_attendance($user_id, $report_id);
+    
     if (is_wp_error($attendances)) {
+        error_log("Error getting attendance: " . $attendances->get_error_message());
         return $attendances;
     }
+
+    error_log("Retrieved attendances: " . print_r($attendances, true));
 
     // Format attendance data for email
     $attendance_data = [];
@@ -295,7 +303,7 @@ function pbda_send_attendance_report($user_id = false) {
         $attendance_data[$date] = $time;
     }
 
-    return EmailManager::send_attendance_report($user_id, $attendance_data);
+    return EmailManager::send_attendance_report($user_id, $attendance_data, $report_id);
 }
 
 function pbda_get_report_id_by_month($month) {

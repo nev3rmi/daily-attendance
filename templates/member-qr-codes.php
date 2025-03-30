@@ -22,41 +22,6 @@ $current_month = date('Y-m');
 <div class="wrap">
     <h1><?php esc_html_e('View Members', 'daily-attendance'); ?></h1>
     
-    <!-- Add email controls -->
-    <div class="pbda-email-controls">
-        <select id="month-select">
-            <?php 
-            // Get existing reports
-            $reports = get_posts(array(
-                'post_type' => 'da_reports',
-                'posts_per_page' => -1,
-                'orderby' => 'meta_value',
-                'meta_key' => '_month',
-                'order' => 'DESC'
-            ));
-
-            foreach($reports as $report) {
-                $month = get_post_meta($report->ID, '_month', true);
-                $date = DateTime::createFromFormat('Ym', $month);
-                if ($date) {
-                    $selected = ($month === date('Ym')) ? 'selected' : '';
-                    echo sprintf(
-                        '<option value="%s" data-report-id="%d" %s>%s</option>', 
-                        esc_attr($month),
-                        $report->ID,
-                        $selected,
-                        esc_html($date->format('F Y'))
-                    );
-                }
-            }
-            ?>
-        </select>
-        <button class="button button-primary" id="send-all-reports">
-            <?php esc_html_e('Send Reports to All', 'daily-attendance'); ?>
-        </button>
-        <span id="email-status" style="display:none;"></span>
-    </div>
-
     <div class="pbda-info-box">
         <h3><?php esc_html_e('API Information', 'daily-attendance'); ?></h3>
         <p><?php esc_html_e('Endpoint:', 'daily-attendance'); ?> <code><?php echo esc_html(get_rest_url(null, 'v1/attendances/submit')); ?></code></p>
@@ -112,6 +77,44 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
 }</code></pre>
         </div>
     </div>
+
+    <div class="pbda-report-selection">
+        <h3><?php esc_html_e('Send Attendance Reports', 'daily-attendance'); ?></h3>
+        <div class="pbda-email-controls">
+            <select id="month-select">
+                <?php 
+                // Get existing reports
+                $reports = get_posts(array(
+                    'post_type' => 'da_reports',
+                    'posts_per_page' => -1,
+                    'orderby' => 'meta_value',
+                    'meta_key' => '_month',
+                    'order' => 'DESC'
+                ));
+
+                foreach($reports as $report) {
+                    $month = get_post_meta($report->ID, '_month', true);
+                    $date = DateTime::createFromFormat('Ym', $month);
+                    if ($date) {
+                        $selected = ($month === date('Ym')) ? 'selected' : '';
+                        echo sprintf(
+                            '<option value="%s" data-report-id="%d" %s>%s</option>', 
+                            esc_attr($month),
+                            $report->ID,
+                            $selected,
+                            esc_html($date->format('F Y'))
+                        );
+                    }
+                }
+                ?>
+            </select>
+            <button class="button button-primary" id="send-all-reports">
+                <?php esc_html_e('Send Reports to All', 'daily-attendance'); ?>
+            </button>
+            <span id="email-status" style="display:none;"></span>
+        </div>
+    </div>
+
     <div class="pbda-qr-grid">
         <?php 
         $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
