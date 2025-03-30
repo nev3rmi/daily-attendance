@@ -55,12 +55,9 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			if ( $column == 'actions' ):
 				?>
-				<form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" style="display:inline;">
-					<input type="hidden" name="action" value="export_attendance_csv">
-					<input type="hidden" name="report_id" value="<?php echo esc_attr($post_id); ?>">
-					<input type="hidden" name="nonce" value="<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>">
-					<input type="submit" class="button" value="<?php esc_attr_e('Export to CSV', 'daily-attendance'); ?>">
-				</form>
+				<button class="button export-csv" data-report="<?php echo esc_attr($post_id); ?>">
+					<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+				</button>
 				<?php
 			endif;
 
@@ -779,6 +776,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function ajax_export_attendance_csv(): void {
 			error_log('Export CSV request received');
 			error_log('POST data: ' . print_r($_POST, true));
+			error_log('GET data: ' . print_r($_GET, true));
 
 			// Verify nonce first
 			if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pbda_ajax_nonce')) {
@@ -801,7 +799,12 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			// Load and use the ExportManager
 			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
-			ExportManager::generate_csv($report_id);
+			try {
+				ExportManager::generate_csv($report_id);
+			} catch (Exception $e) {
+				error_log('Export failed: ' . $e->getMessage());
+				wp_die('Export failed: ' . $e->getMessage());
+			}
 		}
 	}
 
