@@ -149,8 +149,6 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
         <h3><?php esc_html_e('Email Debug Log', 'daily-attendance'); ?></h3>
         <div id="debug-log-content"></div>
     </div>
-
-    testsetsets
 </div>
 
 <style>
@@ -263,21 +261,27 @@ code {
 
 <script>
 jQuery(document).ready(function($) {
-    // ...existing QR code generation code...
-
-    function addDebugEntry(data) {
+    function addDebugEntry(data, userId) {
+        const userName = $(`.pbda-qr-item[data-user-id="${userId}"] h3`).text();
+        const userEmail = $(`.pbda-qr-item[data-user-id="${userId}"] p`).text();
+        
         const entryHtml = `
             <div class="debug-entry ${data.status}">
-                <strong>Time:</strong> ${data.start_time} - ${data.end_time || 'N/A'}<br>
-                <strong>User:</strong> ID ${data.user_id} (${data.user_email || 'N/A'})<br>
-                <strong>Status:</strong> ${data.status}<br>
-                <strong>Message:</strong> ${data.message}<br>
-                <strong>SMTP Active:</strong> ${data.smtp_active ? 'Yes' : 'No'}<br>
-                <strong>Report:</strong> ${data.report_title || 'N/A'} (ID: ${data.report_id || 'N/A'})<br>
-                <strong>Attendance Data:</strong>
-                <pre>${JSON.stringify(data.attendance_data, null, 2)}</pre>
+                <h4>Email Report for ${userName} (${userEmail})</h4>
+                <div class="debug-details">
+                    <p><strong>Time:</strong> ${data.start_time}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Message:</strong> ${data.message}</p>
+                    <p><strong>SMTP Active:</strong> ${data.smtp_active ? 'Yes' : 'No'}</p>
+                    <p><strong>Report:</strong> ${data.report_title}</p>
+                    <div class="attendance-data">
+                        <strong>Attendance Data:</strong>
+                        <pre>${JSON.stringify(data.attendance_data, null, 2)}</pre>
+                    </div>
+                </div>
             </div>
         `;
+        
         $('#debug-log-content').prepend(entryHtml);
     }
 
@@ -287,6 +291,16 @@ jQuery(document).ready(function($) {
         
         $status.html('<?php esc_html_e('Sending...', 'daily-attendance'); ?>');
         
+        // Add processing entry to debug log
+        addDebugEntry({
+            status: 'processing',
+            start_time: new Date().toLocaleString(),
+            message: 'Sending email...',
+            attendance_data: {},
+            smtp_active: true,
+            report_title: $('#month-select option:selected').text()
+        }, userId);
+
         $.ajax({
             url: ajaxurl,
             method: 'POST',
@@ -298,25 +312,39 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    $status.html(response.data.message).addClass('status-success').removeClass('status-error');
-                    addDebugEntry(response.data);
+                    $status.html('✓ ' + response.data.message)
+                           .addClass('status-success')
+                           .removeClass('status-error');
+                    // Update the debug entry with full data
+                    addDebugEntry(response.data, userId);
                 } else {
-                    $status.html(response.data).addClass('status-error').removeClass('status-success');
+                    $status.html('✕ ' + response.data)
+                           .addClass('status-error')
+                           .removeClass('status-success');
+                    // Add error entry to debug log
+                    addDebugEntry({
+                        status: 'error',
+                        start_time: new Date().toLocaleString(),
+                        message: response.data,
+                        attendance_data: {},
+                        smtp_active: true,
+                        report_title: $('#month-select option:selected').text()
+                    }, userId);
                 }
-                setTimeout(() => $status.html(''), 5000);
             },
-            error: function() {
-                const errorData = {
+            error: function(xhr, status, error) {
+                $status.html('✕ Failed')
+                       .addClass('status-error')
+                       .removeClass('status-success');
+                // Add error entry to debug log
+                addDebugEntry({
                     status: 'error',
-                    message: 'AJAX request failed',
-                    start_time: new Date().toISOString(),
-                    user_id: userId,
-                    smtp_active: false
-                };
-                $status.html('<?php esc_html_e('Failed to send report', 'daily-attendance'); ?>')
-                    .addClass('status-error').removeClass('status-success');
-                addDebugEntry(errorData);
-                setTimeout(() => $status.html(''), 5000);
+                    start_time: new Date().toLocaleString(),
+                    message: `Ajax Error: ${error}`,
+                    attendance_data: {},
+                    smtp_active: false,
+                    report_title: $('#month-select option:selected').text()
+                }, userId);
             }
         });
     }
@@ -354,5 +382,37 @@ jQuery(document).ready(function($) {
             }, index * 1000); // Stagger requests 1 second apart
         });
     });
+
+    // Update styles for debug entries
+    $(`<style>
+        .debug-entry {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+            background: white;
+        }
+        .debug-entry.processing { border-left-color: #2196F3; }
+        .debug-entry.success { border-left-color: #4CAF50; }
+        .debug-entry.error { border-left-color: #f44336; }
+        .debug-entry h4 {
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .debug-details p {
+            margin: 5px 0;
+        }
+        .attendance-data {
+            margin-top: 10px;
+        }
+        .attendance-data pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow: auto;
+        }
+    </style>`).appendTo('head');
 });
 </script>
