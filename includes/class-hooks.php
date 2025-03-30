@@ -124,11 +124,14 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 
-		public function serve_attendances_submit(): WP_REST_Response {
+		public function serve_attendances_submit(WP_REST_Request $request): WP_REST_Response {
+			// Get JSON data from request
+			$params = $request->get_json_params();
+			
 			// Check for hash authentication first
-			$hash = isset($_POST['hash']) ? sanitize_text_field($_POST['hash']) : '';
-			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-			$timestamp = isset($_POST['timestamp']) ? intval($_POST['timestamp']) : 0;
+			$hash = isset($params['hash']) ? sanitize_text_field($params['hash']) : '';
+			$user_id = isset($params['user_id']) ? intval($params['user_id']) : 0;
+			$timestamp = isset($params['timestamp']) ? intval($params['timestamp']) : 0;
 
 			if ($hash && $user_id && $timestamp) {
 				// Verify hash authentication
@@ -154,8 +157,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			}
 
 			// Fallback to username/password authentication
-			$user_name = isset($_POST['userName']) ? sanitize_text_field($_POST['userName']) : '';
-			$password = isset($_POST['passWord']) ? sanitize_text_field($_POST['passWord']) : '';
+			$user_name = isset($params['userName']) ? sanitize_text_field($params['userName']) : '';
+			$password = isset($params['passWord']) ? sanitize_text_field($params['passWord']) : '';
 			
 			if (empty($user_name) || empty($password)) {
 				return new WP_REST_Response(array(
@@ -210,28 +213,22 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					'userName' => array(
 						'required' => false,
 						'type' => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'description' => 'WordPress username',
 					),
 					'passWord' => array(
 						'required' => false,
 						'type' => 'string',
-						'description' => 'WordPress password',
 					),
 					'hash' => array(
 						'required' => false,
 						'type' => 'string',
-						'description' => 'QR code hash for authentication',
 					),
 					'user_id' => array(
 						'required' => false,
 						'type' => 'integer',
-						'description' => 'User ID for hash authentication',
 					),
 					'timestamp' => array(
 						'required' => false,
 						'type' => 'integer',
-						'description' => 'Timestamp for hash authentication',
 					)
 				),
 			));

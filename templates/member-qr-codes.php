@@ -2,6 +2,15 @@
 
 // Enqueue QR code script properly
 wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array('jquery'), '1.0.0', true);
+
+// Example QR hash data for documentation
+$example_user = reset($users = get_users(['fields' => ['ID', 'user_login']]));
+$example_qr_data = json_encode([
+    'user_id' => $example_user->ID,
+    'timestamp' => time(),
+    'hash' => hash_hmac('sha256', $example_user->ID . time(), get_option('pbda_qr_secret'))
+], JSON_PRETTY_PRINT);
+
 ?>
 
 <div class="wrap">
@@ -9,15 +18,47 @@ wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', arra
     <div class="pbda-info-box">
         <h3><?php esc_html_e('API Information', 'daily-attendance'); ?></h3>
         <p><?php esc_html_e('Endpoint:', 'daily-attendance'); ?> <code><?php echo esc_html(get_rest_url(null, 'v1/attendances/submit')); ?></code></p>
-        <p><?php esc_html_e('Authentication Methods:', 'daily-attendance'); ?></p>
-        <ul>
-            <li><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?>
-                <br><code>userName, passWord</code>
-            </li>
-            <li><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?>
-                <br><code>hash, user_id, timestamp</code>
-            </li>
-        </ul>
+        <p><?php esc_html_e('Method:', 'daily-attendance'); ?> <code>POST</code></p>
+        
+        <div class="api-method">
+            <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
+            <pre><code>{
+    "userName": "john_doe",
+    "passWord": "your_password"
+}</code></pre>
+        </div>
+
+        <div class="api-method">
+            <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
+            <pre><code><?php echo esc_html($example_qr_data); ?></code></pre>
+        </div>
+
+        <div class="api-method">
+            <h4><?php esc_html_e('API Usage Example:', 'daily-attendance'); ?></h4>
+            <pre><code>// Using fetch API
+fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        hash: "generated_hash",
+        user_id: 123,
+        timestamp: <?php echo time(); ?>
+    })
+})
+.then(response => response.json())
+.then(data => console.log(data));</code></pre>
+        </div>
+
+        <div class="api-response">
+            <h4><?php esc_html_e('Response Format:', 'daily-attendance'); ?></h4>
+            <pre><code>{
+    "version": "V1",
+    "success": true,
+    "content": "Attendance marked successfully for John Doe"
+}</code></pre>
+        </div>
     </div>
     <div class="pbda-qr-grid">
         <?php 
@@ -53,9 +94,24 @@ wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', arra
     margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.pbda-info-box code {
+.api-method, .api-response {
+    margin: 20px 0;
+}
+.api-method h4, .api-response h4 {
+    margin: 10px 0;
+    color: #333;
+}
+pre {
     background: #f5f5f5;
-    padding: 3px 6px;
+    padding: 15px;
     border-radius: 4px;
+    overflow: auto;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+}
+code {
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
 }
 </style>
