@@ -124,10 +124,57 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 
-		public function serve_attendances_submit(): WP_REST_Response {
+		public function serve_attendances_submit(WP_REST_Request $request): WP_REST_Response {
+			// Get raw input
+			$json = file_get_contents('php://input');
+			$params = json_decode($json, true);
 
-			$user_name    = isset( $_POST['userName'] ) ? sanitize_text_field( $_POST['userName'] ) : '';
-			$password     = isset( $_POST['passWord'] ) ? sanitize_text_field( $_POST['passWord'] ) : '';
+			// Fallback to other methods if JSON parsing fails
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				$params = $request->get_json_params();
+				if (empty($params)) {
+					$params = $request->get_params();
+				}
+			}
+
+			// Debug logging
+			error_log('Raw input: ' . $json);
+			error_log('Parsed params: ' . print_r($params, true));
+			error_log('Request headers: ' . print_r(getallheaders(), true));
+
+			// Check for hash authentication first 
+			$hash = isset($params['hash']) ? sanitize_text_field($params['hash']) : '';
+			$user_id = isset($params['user_id']) ? intval($params['user_id']) : 0;
+
+			if ($hash && $user_id) {
+				// Verify hash without timestamp
+				$expected_hash = hash_hmac('sha256', $user_id, get_option('pbda_qr_secret'));
+				
+				if (hash_equals($expected_hash, $hash)) {
+					$response = pbda_insert_attendance($user_id);
+					return new WP_REST_Response(array(
+						'version' => 'V1',
+						'success' => !is_wp_error($response),
+						'content' => is_wp_error($response) ? $response->get_error_message() : $response,
+					));
+				}
+			}
+
+			 // Username/password authentication
+			 $user_name = isset($params['userName']) ? sanitize_text_field($params['userName']) : '';
+			 $password = isset($params['passWord']) ? sanitize_text_field($params['passWord']) : '';
+			 
+			 if (empty($user_name) || empty($password)) {
+				 return new WP_REST_Response(array(
+					 'version' => 'V1',
+					 'success' => false,
+					 'content' => sprintf(
+						 'Invalid authentication method. Received: %s', 
+						 json_encode($params)
+					 )
+				 ));
+			 }
+
 			$current_user = wp_authenticate( $user_name, $password );
 
 			if ( is_wp_error( $current_user ) ) {
@@ -165,11 +212,29 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 
 		public function register_api(): void {
-
-			register_rest_route( 'v1', '/attendances/submit', array(
-				'methods'  => 'POST',
-				'callback' => array( $this, 'serve_attendances_submit' ),
-			) );
+			register_rest_route('v1', '/attendances/submit', array(
+				'methods' => 'POST',
+				'callback' => array($this, 'serve_attendances_submit'),
+				'permission_callback' => '__return_true',
+				'args' => array(
+					'userName' => array(
+						'required' => false,
+						'type' => 'string',
+					),
+					'passWord' => array(
+						'required' => false,
+						'type' => 'string',
+					),
+					'hash' => array(
+						'required' => false,
+						'type' => 'string',
+					),
+					'user_id' => array(
+						'required' => false,
+						'type' => 'integer',
+					)
+					)
+			));
 		}
 
 
@@ -356,18 +421,21 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 * Register Post Types
 		 */
 		public function register_post_types(): void {
-
-			pbda()->PB_Settings()->register_post_type( 'da_reports', array(
-				'singular'      => esc_html__( 'Daily Attendance', 'daily-attendance' ),
-				'plural'        => esc_html__( 'Attendance Reports', 'daily-attendance' ),
-				'menu_icon'     => 'dashicons-yes',
-				'menu_position' => 20,
-				'supports'      => array( '' ),
-				'capabilities'  => array( 'create_posts' => 'do_not_allow' ),
-				'labels'        => array(
-					'edit_item' => esc_html__( 'View Attendance Reports', 'daily-attendance' ),
+			pbda()->PB_Settings()->register_post_type('da_reports', array(
+				'singular'      => esc_html__('Attendance Report', 'daily-attendance'),
+				'plural'        => esc_html__('Attendance Reports', 'daily-attendance'),
+				'menu_icon'     => 'dashicons-id-alt',
+				'menu_position' => 30,
+				'supports'      => array(''),
+				'capabilities'  => array(
+					'create_posts' => false
 				),
-			) );
+				'map_meta_cap'  => true,
+				'labels'        => array(
+					'menu_name'  => esc_html__('Daily Attendance', 'daily-attendance'),
+					'all_items'  => esc_html__('Monthly Reports', 'daily-attendance'),
+				),
+			));
 		}
 
 
