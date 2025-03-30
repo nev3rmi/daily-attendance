@@ -21,51 +21,39 @@ jQuery(document).ready(function($) {
     }
 
     function updatePreview() {
-        // Add loading indicator
         $('#template-preview-body').html('<div class="updating">Updating preview...</div>');
         
-        const subject = $('#pbda_email_subject').val() || pbdaDefaults.subject;
-        let bodyContent = '';
-        
-        // Get content from TinyMCE or textarea
-        if (tinymce.get('pbda_email_template')) {
-            bodyContent = tinymce.get('pbda_email_template').getContent();
-        } else {
-            bodyContent = $('#pbda_email_template').val();
-        }
+        // Get subject and body content
+        let subject = $('#pbda_email_subject').val() || pbdaDefaults.subject;
+        let bodyContent = tinymce.get('pbda_email_template') ? 
+            tinymce.get('pbda_email_template').getContent() : 
+            $('#pbda_email_template').val() || pbdaDefaults.template;
 
-        bodyContent = bodyContent || pbdaDefaults.template;
-
-        // Replace shortcodes
-        const replacements = {
-            subject: {
-                '[username]': 'John Doe',
-                '[title]': 'March 2024',
-                '[date]': new Date().toLocaleDateString()
-            },
-            body: {
-                '[username]': 'John Doe',
-                '[title]': 'March 2024', 
-                '[email]': 'john@example.com',
-                '[date]': new Date().toLocaleDateString(),
-                '[total_days]': '15',
-                '[attendance_table]': getExampleTable()
-            }
+        // Simple key-value replacements
+        const shortcodes = {
+            '[title]': 'March 2024',
+            '[username]': 'John Doe',
+            '[email]': 'john@example.com',
+            '[date]': new Date().toLocaleDateString(),
+            '[total_days]': '15',
+            '[attendance_table]': getExampleTable()
         };
 
-        let processedSubject = subject;
-        let processedBody = bodyContent;
-
-        Object.entries(replacements.subject).forEach(([key, value]) => {
-            processedSubject = processedSubject.replace(new RegExp(key, 'g'), value);
-        });
-
-        Object.entries(replacements.body).forEach(([key, value]) => {
-            processedBody = processedBody.replace(new RegExp(key, 'g'), value);
+        // Process replacements
+        Object.keys(shortcodes).forEach(key => {
+            const regex = new RegExp(escapeRegex(key), 'g');
+            subject = subject.replace(regex, shortcodes[key]);
+            bodyContent = bodyContent.replace(regex, shortcodes[key]);
         });
         
-        $('#template-preview-subject span').text(processedSubject);
-        $('#template-preview-body').html(processedBody);
+        // Update preview
+        $('#template-preview-subject span').text(subject);
+        $('#template-preview-body').html(bodyContent);
+    }
+
+    // Helper function to escape regex special characters
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     // Manual preview update button
