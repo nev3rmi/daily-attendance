@@ -561,6 +561,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				wp_send_json_error('Permission denied');
 			}
 
+			// Get WordPress timezone
+			$wp_timezone = wp_timezone();
+			$current_time = new DateTime('now', $wp_timezone);
+			
+			$args = array(
+				'user_id' => $user_id,
+				'report_id' => pbda_current_report_id(),
+				'date' => $date,
+				'current_time' => $current_time->getTimestamp(),
+			);
+
 			$args = array(
 				'user_id' => $user_id,
 				'report_id' => pbda_current_report_id(),
