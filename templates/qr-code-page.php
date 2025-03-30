@@ -30,7 +30,7 @@ $qr_data = $submission_url;
 <div class="pbda-qr-container">
     <div class="pbda-qr-left">
         <h2><?php esc_html_e('Scan a QR Code', 'daily-attendance'); ?></h2>
-        <div id="reader" style="width: 300px; margin: 0 auto;"></div>
+        <div id="reader" style="width: 600px; margin: 0 auto;"></div>
         <!-- New result container below the scanner -->
         <div id="scanResult" style="margin-top: 15px; font-size: 1.1em; color: green;"></div>
         <p class="qr-instructions"><?php esc_html_e('Point your camera at a QR code to mark attendance.', 'daily-attendance'); ?></p>
@@ -109,7 +109,7 @@ jQuery(document).ready(function($) {
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
             { facingMode: "environment" },
-            { fps: 5, qrbox: 150 },
+            { fps: 5, qrbox: 250 },
             onScanSuccess,
             onScanFailure
         ).catch(err => {
