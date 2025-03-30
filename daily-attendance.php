@@ -107,7 +107,12 @@ class DailyAttendance {
 
     public function render_view_members_page(): void {
         $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
-        wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', array(), '1.0.0', true);
+        
+        // Enqueue QR code script properly
+        wp_enqueue_script('qrcode-js', PBDA_PLUGIN_URL . 'assets/js/qrcode.min.js', [], '1.0.0', false);
+        
+        // Add inline script initialization after QR code library is loaded
+        wp_add_inline_script('qrcode-js', 'window.addEventListener("load", function() {', 'before');
         ?>
         <div class="wrap">
             <h1>View Members</h1>
@@ -121,6 +126,7 @@ class DailyAttendance {
             </div>
         </div>
         <?php
+        wp_add_inline_script('qrcode-js', '});', 'after');
     }
 
     private function generate_qr_data($user_id): string {
