@@ -22,62 +22,6 @@ $current_month = date('Y-m');
 <div class="wrap">
     <h1><?php esc_html_e('View Members', 'daily-attendance'); ?></h1>
     
-    <div class="pbda-info-box">
-        <h3><?php esc_html_e('API Information', 'daily-attendance'); ?></h3>
-        <p><?php esc_html_e('Endpoint:', 'daily-attendance'); ?> <code><?php echo esc_html(get_rest_url(null, 'v1/attendances/submit')); ?></code></p>
-        <p><?php esc_html_e('Method:', 'daily-attendance'); ?> <code>POST</code></p>
-        
-        <div class="api-method">
-            <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
-            <pre>{
-    "userName": "john_doe",
-    "passWord": "your_password"
-}</pre>
-        </div>
-
-        <div class="api-method">
-            <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-            <pre>{
-    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-    "hash": "<?php echo $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash'; ?>"
-}</pre>
-        </div>
-
-        <div class="api-method">
-            <h4><?php esc_html_e('API Usage Example:', 'daily-attendance'); ?></h4>
-            <pre>// Using curl
-curl -X POST <?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?> \
--H "Content-Type: application/json" \
--H "Accept: application/json" \
--d '{
-    "userName": "john_doe",
-    "passWord": "your_password"
-}'
-
-// Or using fetch API
-fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-        userName: 'john_doe',
-        passWord: 'your_password'
-    })
-}).then(r => r.json()).then(console.log);</pre>
-        </div>
-
-        <div class="api-response">
-            <h4><?php esc_html_e('Response Format:', 'daily-attendance'); ?></h4>
-            <pre>{
-    "version": "V1",
-    "success": true,
-    "content": "Attendance marked successfully for John Doe"
-}</pre>
-        </div>
-    </div>
-
     <div class="pbda-report-selection">
         <h3><?php esc_html_e('Send Monthly Reports', 'daily-attendance'); ?></h3>
         <div class="pbda-email-controls">
