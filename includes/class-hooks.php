@@ -152,6 +152,12 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				
 				if (hash_equals($expected_hash, $hash)) {
 					$response = pbda_insert_attendance($user_id);
+					
+					if (!is_wp_error($response)) {
+						// Send email report after successful attendance
+						pbda_send_attendance_report($user_id);
+					}
+
 					return new WP_REST_Response(array(
 						'version' => 'V1',
 						'success' => !is_wp_error($response),

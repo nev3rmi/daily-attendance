@@ -30,6 +30,7 @@ require_once(PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
 require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-email-manager.php');
 
 /**
  * Class DailyAttendance

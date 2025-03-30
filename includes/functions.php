@@ -277,3 +277,23 @@ function pbda_format_time($timestamp) {
     $date->setTimezone($wp_timezone);
     return $date->format('h:i A');
 }
+
+function pbda_send_attendance_report($user_id = false) {
+    if (!$user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    $attendances = pbda_get_user_attendance($user_id);
+    if (is_wp_error($attendances)) {
+        return $attendances;
+    }
+
+    // Format attendance data for email
+    $attendance_data = [];
+    foreach ($attendances as $day => $time) {
+        $date = date('Y-m-d', strtotime(date('Y-m-') . $day));
+        $attendance_data[$date] = $time;
+    }
+
+    return EmailManager::send_attendance_report($user_id, $attendance_data);
+}
