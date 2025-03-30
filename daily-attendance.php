@@ -78,14 +78,6 @@ class DailyAttendance {
             );
             add_submenu_page(
                 'daily-attendance',
-                'Report',
-                'Report',
-                'manage_options',
-                'daily-attendance',
-                [$this, 'render_report_page']
-            );
-            add_submenu_page(
-                'daily-attendance',
                 'View Members',
                 'View Members',
                 'manage_options',
