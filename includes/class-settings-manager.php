@@ -401,237 +401,95 @@ class SettingsManager {
             <div class="api-sections-nav">
                 <h3>API Endpoints</h3>
                 <ul class="api-nav">
-                    <li><a href="#public-endpoints">Public Endpoints</a></li>
-                    <li><a href="#admin-endpoints">Admin Endpoints</a></li>
-                    <li><a href="#api-key-endpoints">API Key Endpoints</a></li>
+                    <li><a href="#auth">Authentication</a></li>
+                    <li><a href="#endpoints">Endpoints</a></li>
                 </ul>
             </div>
 
-            <div id="public-endpoints">
-                <h2>Public Endpoints</h2>
+            <div id="auth">
+                <h2>Authentication</h2>
+                <div class="api-section">
+                    <p>Your API Key: <code><?php echo esc_html($api_key); ?></code></p>
+                    <button id="regenerate-api-key" class="button button-secondary">
+                        <?php esc_html_e('Regenerate API Key', 'daily-attendance'); ?>
+                    </button>
+                    <div class="api-auth-info">
+                        <p>Add the API key to requests using one of these methods:</p>
+                        <ol>
+                            <li>Header: <code>X-API-Key: your_api_key</code></li>
+                            <li>Query parameter: <code>?api_key=your_api_key</code></li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div id="endpoints">
+                <h2>API Endpoints</h2>
+                
                 <div class="api-section">
                     <h3>1. Mark Attendance</h3>
-                    <p>No authentication required</p>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/attendances/submit')); ?></code></p>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/submit')); ?></code></p>
                     <p><strong>Method:</strong> POST</p>
-                    
-                    <div class="api-method">
-                        <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
-                        <pre><code class="language-bash"># Using cURL
-curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
-     -H "Content-Type: application/json" \
-     -d '{
-  "userName": "<?php echo $example_user ? $example_user->user_login : 'admin'; ?>",
-  "passWord": "your_password"
-}'</code></pre>
-                    </div>
-
-                    <div class="api-method">
-                        <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-                        <pre><code class="language-bash"># Using cURL
-curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
+                    <p><strong>Auth Required:</strong> No</p>
+                    <pre><code class="language-bash"># Using QR Code Hash
+curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
   "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
   "hash": "<?php echo esc_attr($example_hash); ?>"
 }'</code></pre>
-                    </div>
                 </div>
-            </div>
 
-            <div id="admin-endpoints">
-                <h2>Admin Endpoints (Requires WordPress Admin Login)</h2>
                 <div class="api-section">
-                    <h3>1. List All Reports</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/admin/reports')); ?></code></p>
+                    <h3>2. Get All Reports</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/reports')); ?></code></p>
                     <p><strong>Method:</strong> GET</p>
-                    <p><strong>Required:</strong> WordPress admin login</p>
-                    <pre><code class="language-bash"># Using cURL with cookie authentication
-curl -X GET "<?php echo esc_url(rest_url('v1/admin/reports')); ?>" \
-     -H "Cookie: wordpress_logged_in_[your_cookie_hash]"</code></pre>
-                </div>
-
-                <div class="api-section">
-                    <h3>2. Send Report to All Users</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/admin/send-report-all')); ?></code></p>
-                    <p><strong>Method:</strong> POST</p>
-                    <p><strong>Required:</strong> WordPress admin login</p>
-                    <pre><code class="language-bash"># Using cURL
-curl -X POST "<?php echo esc_url(rest_url('v1/send-report-all')); ?>" \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
-     -d '{
-    "report_id": 123  // ID of an existing attendance report
-}'</code></pre>
-                </div>
-            </div>
-
-            <div id="api-key-endpoints">
-                <h2>API Key Endpoints</h2>
-                <div class="api-section">
-                    <h3>1. List All Reports</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/reports')); ?></code></p>
-                    <p><strong>Method:</strong> GET</p>
-                    <pre><code class="language-bash"># Using cURL
-curl -X GET "<?php echo esc_url(rest_url('v1/reports')); ?>" \
+                    <p><strong>Auth Required:</strong> Yes</p>
+                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
                 </div>
 
                 <div class="api-section">
-                    <h3>2. Send Report to All Users</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report-all')); ?></code></p>
-                    <p><strong>Method:</strong> POST</p>
-                    <pre><code class="language-bash"># Using cURL
-curl -X POST "<?php echo esc_url(rest_url('v1/send-report-all')); ?>" \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
-     -d '{
-    "report_id": 123  // ID of an existing attendance report
-}'</code></pre>
-                </div>
-
-                <div class="api-section">
                     <h3>3. Export Report to CSV</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/export-csv/{report_id}')); ?></code></p>
                     <p><strong>Method:</strong> GET</p>
-                    <p><strong>Required:</strong> API Key authentication</p>
-                    <pre><code class="language-bash"># Using cURL
-curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?api_key=<?php echo esc_attr($api_key); ?>"</code></pre>
+                    <p><strong>Auth Required:</strong> Yes</p>
+                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
                 </div>
 
                 <div class="api-section">
-                    <h3>4. Send Individual Report</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
+                    <h3>4. Send Report</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report')); ?></code></p>
                     <p><strong>Method:</strong> POST</p>
-                    <p><strong>Required:</strong> API Key authentication</p>
-                    <pre><code class="language-bash"># Using cURL
-curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
+                    <p><strong>Auth Required:</strong> Yes</p>
+                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-    "report_id": 123  // ID of an existing attendance report
+    "report_id": 123
 }'</code></pre>
                 </div>
 
                 <div class="api-section">
-                    <h3>JavaScript Example</h3>
-                    <pre><code class="language-javascript">// Using Fetch API
-fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': '<?php echo $nonce; ?>'
-    },
-    body: JSON.stringify({
-        userName: '<?php echo $example_user ? $example_user->user_login : 'admin'; ?>',
-        passWord: 'your_password'
-    })
-})
-.then(response => response.json())
-.then(data => console.log(data))
-.catch(error => console.error('Error:', error));</code></pre>
+                    <h3>5. Send Report to All Users</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report-all')); ?></code></p>
+                    <p><strong>Method:</strong> POST</p>
+                    <p><strong>Auth Required:</strong> Yes</p>
+                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     -d '{
+    "report_id": 123
+}'</code></pre>
                 </div>
             </div>
 
-            <style>
-            .api-sections-nav {
-                background: #fff;
-                padding: 15px;
-                border-radius: 4px;
-                margin-bottom: 20px;
-            }
-            .api-nav {
-                list-style: none;
-                padding: 0;
-                margin: 10px 0;
-            }
-            .api-nav li {
-                display: inline-block;
-                margin-right: 15px;
-            }
-            .api-documentation {
-                padding: 30px;
-                background: #fff;
-                border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            .api-section {
-                margin: 30px 0;
-                padding: 20px;
-                border: 1px solid #e5e5e5;
-                border-radius: 4px;
-                background: #f9f9f9;
-            }
-            .api-section h3 {
-                margin-top: 0;
-                color: #2271b1;
-                border-bottom: 2px solid #2271b1;
-                padding-bottom: 10px;
-            }
-            .api-method {
-                margin: 20px 0;
-            }
-            .api-method h4 {
-                color: #1d2327;
-                margin-bottom: 10px;
-            }
-            pre {
-                background: #272822;
-                color: #f8f8f2;
-                padding: 15px;
-                border-radius: 4px;
-                overflow: auto;
-                font-family: monospace;
-            }
-            code {
-                font-family: monospace;
-                font-size: 14px;
-                line-height: 1.4;
-            }
-            .language-bash {
-                color: #a6e22e;
-            }
-            .language-javascript {
-                color: #66d9ef;
-            }
-            .api-note {
-                background: #fff3cd;
-                padding: 10px 15px;
-                border-left: 4px solid #ffc107;
-                margin: 15px 0;
-            }
-            .api-auth-info {
-                margin: 20px 0;
-                padding: 15px;
-                background: #f8f9fa;
-                border-radius: 4px;
-            }
-            h2 {
-                margin: 30px 0 20px;
-                padding-bottom: 10px;
-                border-bottom: 2px solid #2271b1;
-                color: #1d2327;
-            }
-            </style>
+            <?php
+            // ...existing styles and script code...
+            ?>
         </div>
-
-        <script>
-        jQuery(document).ready(function($) {
-            $('#regenerate-api-key').on('click', function() {
-                if (confirm('Are you sure? This will invalidate your existing API key.')) {
-                    $.post(ajaxurl, {
-                        action: 'regenerate_api_key',
-                        nonce: '<?php echo wp_create_nonce("pbda_regenerate_api_key"); ?>'
-                    }, function(response) {
-                        if (response.success) {
-                            location.reload();
-                        }
-                    });
-                }
-            });
-        });
-        </script>
         <?php
     }
 

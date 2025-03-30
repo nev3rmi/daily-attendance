@@ -267,11 +267,11 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function register_api(): void {
-			 // Add plugin prefix to namespace
-			 $namespace = 'daily-attendance/v1';
+			// Add plugin prefix to namespace
+			$namespace = 'v1';
 
 			// Public endpoints (no API key required)
-			register_rest_route($namespace, '/attendances/submit', array(
+			register_rest_route($namespace, '/qr-attendance/submit', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'serve_attendances_submit'),
 				'permission_callback' => '__return_true',
@@ -291,12 +291,15 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					'user_id' => array(
 						'required' => false,
 						'type' => 'integer',
+						'validate_callback' => function($param) {
+							return is_numeric($param);
+						}
 					)
-					)
+				)
 			));
 
-			 // Admin endpoints (requires WP admin login)
-			 register_rest_route($namespace, '/admin/reports', array(
+			// Admin endpoints (requires WP admin login)
+			register_rest_route($namespace, '/qr-attendance/reports', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
@@ -304,12 +307,10 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				}
 			));
 		
-			register_rest_route($namespace, '/admin/send-report-all', array(
+			register_rest_route($namespace, '/qr-attendance/send-report-all', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report_all'),
-				'permission_callback' => function() {
-					return current_user_can('manage_options');
-				},
+				'permission_callback' => array($this, 'verify_api_key'),
 				'args' => array(
 					'report_id' => array(
 						'required' => true,
@@ -318,8 +319,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				)
 			));
 
-			 // API key endpoints
-			 register_rest_route($namespace, '/export-csv/(?P<report_id>\d+)', array(
+			// API key endpoints
+			register_rest_route($namespace, '/qr-attendance/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
 				'permission_callback' => array($this, 'verify_api_key'),
@@ -334,7 +335,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				)
 			));
 
-			register_rest_route($namespace, '/send-report', array(
+			register_rest_route($namespace, '/qr-attendance/send-report', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report'),
 				'permission_callback' => array($this, 'verify_api_key'),
