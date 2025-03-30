@@ -398,98 +398,67 @@ class SettingsManager {
         }
         ?>
         <div class="api-documentation">
-            <div class="api-sections-nav">
-                <h3>API Endpoints</h3>
-                <ul class="api-nav">
-                    <li><a href="#auth">Authentication</a></li>
-                    <li><a href="#endpoints">Endpoints</a></li>
+            <h2>API Documentation</h2>
+            <div class="api-section">
+                <h3>Authentication</h3>
+                <p>Your API Key: <code><?php echo esc_html($api_key); ?></code></p>
+                <button id="regenerate-api-key" class="button button-secondary">
+                    <?php esc_html_e('Regenerate API Key', 'daily-attendance'); ?>
+                </button>
+                <p>Add the API key to requests using either:</p>
+                <ul>
+                    <li>Header: <code>X-API-Key: your_api_key</code></li>
+                    <li>Query parameter: <code>?api_key=your_api_key</code></li>
                 </ul>
             </div>
 
-            <div id="auth">
-                <h2>Authentication</h2>
-                <div class="api-section">
-                    <p>Your API Key: <code><?php echo esc_html($api_key); ?></code></p>
-                    <button id="regenerate-api-key" class="button button-secondary">
-                        <?php esc_html_e('Regenerate API Key', 'daily-attendance'); ?>
-                    </button>
-                    <div class="api-auth-info">
-                        <p>Add the API key to requests using one of these methods:</p>
-                        <ol>
-                            <li>Header: <code>X-API-Key: your_api_key</code></li>
-                            <li>Query parameter: <code>?api_key=your_api_key</code></li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-
-            <div id="endpoints">
-                <h2>API Endpoints</h2>
-                
-                <div class="api-section">
-                    <h3>1. Mark Attendance</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/submit')); ?></code></p>
-                    <p><strong>Method:</strong> POST</p>
-                    <p><strong>Auth Required:</strong> No</p>
-                    <pre><code class="language-bash"># Using QR Code Hash
-curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
+            <div class="api-section">
+                <h3>1. Mark Attendance</h3>
+                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/submit')); ?></code></p>
+                <p><strong>Method:</strong> POST</p>
+                <p><strong>Auth Required:</strong> No</p>
+                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
   "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
   "hash": "<?php echo esc_attr($example_hash); ?>"
 }'</code></pre>
-                </div>
+            </div>
 
-                <div class="api-section">
-                    <h3>2. Get All Reports</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/reports')); ?></code></p>
-                    <p><strong>Method:</strong> GET</p>
-                    <p><strong>Auth Required:</strong> Yes</p>
-                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
+            <div class="api-section">
+                <h3>2. List Reports</h3>
+                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/reports')); ?></code></p>
+                <p><strong>Method:</strong> GET</p>
+                <p><strong>Auth Required:</strong> Yes</p>
+                <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
-                </div>
+            </div>
 
-                <div class="api-section">
-                    <h3>3. Export Report to CSV</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/export-csv/{report_id}')); ?></code></p>
-                    <p><strong>Method:</strong> GET</p>
-                    <p><strong>Auth Required:</strong> Yes</p>
-                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
+            <div class="api-section">
+                <h3>3. Export CSV</h3>
+                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/export-csv/{report_id}')); ?></code></p>
+                <p><strong>Method:</strong> GET</p>
+                <p><strong>Auth Required:</strong> Yes</p>
+                <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
-                </div>
+            </div>
 
-                <div class="api-section">
-                    <h3>4. Send Report</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report')); ?></code></p>
-                    <p><strong>Method:</strong> POST</p>
-                    <p><strong>Auth Required:</strong> Yes</p>
-                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
+            <div class="api-section">
+                <h3>4. Send Report</h3>
+                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report')); ?></code></p>
+                <p><strong>Method:</strong> POST</p>
+                <p><strong>Auth Required:</strong> Yes</p>
+                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
     "report_id": 123
 }'</code></pre>
-                </div>
-
-                <div class="api-section">
-                    <h3>5. Send Report to All Users</h3>
-                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report-all')); ?></code></p>
-                    <p><strong>Method:</strong> POST</p>
-                    <p><strong>Auth Required:</strong> Yes</p>
-                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
-     -d '{
-    "report_id": 123
-}'</code></pre>
-                </div>
             </div>
-
-            <?php
-            // ...existing styles and script code...
-            ?>
         </div>
+
+        <?php // ...existing styles and script code... ?>
         <?php
     }
 
