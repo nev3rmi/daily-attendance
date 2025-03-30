@@ -442,14 +442,34 @@ curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?_wpnonce=<?ph
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Required:</strong> Admin authentication</p>
+                
+                <?php
+                // Get example report for documentation
+                $example_report = get_posts(array(
+                    'post_type' => 'da_reports',
+                    'posts_per_page' => 1,
+                    'orderby' => 'meta_value',
+                    'meta_key' => '_month',
+                    'order' => 'DESC'
+                ));
+                $example_report_id = !empty($example_report) ? $example_report[0]->ID : '123';
+                ?>
+
                 <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
-     -H "X-WP-Nonce: <?php echo $nonce; ?>" \
+     -H "X-WP-Nonce: <?php echo wp_create_nonce('wp_rest'); ?>" \
      -H "Content-Type: application/json" \
      -d '{
-  "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-  "month": "<?php echo date('Ym'); ?>"
+    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+    "report_id": <?php echo $example_report_id; ?>  // ID of an existing attendance report
 }'</code></pre>
+
+                <p><strong>Available Reports:</strong></p>
+                <pre><code class="language-bash"># Get list of available reports
+curl -X GET "<?php echo esc_url(site_url()); ?>/wp-json/wp/v2/da_reports" \
+     -H "X-WP-Nonce: <?php echo wp_create_nonce('wp_rest'); ?>"</code></pre>
+                
+                <p class="api-note">Note: The report_id must correspond to an existing attendance report post ID. Use the reports endpoint above to get a list of available reports.</p>
             </div>
 
             <div class="api-section">
@@ -516,6 +536,12 @@ fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
             }
             .language-javascript {
                 color: #66d9ef;
+            }
+            .api-note {
+                background: #fff3cd;
+                padding: 10px 15px;
+                border-left: 4px solid #ffc107;
+                margin: 15px 0;
             }
             </style>
         </div>

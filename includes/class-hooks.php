@@ -296,9 +296,9 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						'required' => true,
 						'type' => 'integer'
 					),
-					'month' => array(
-						'required' => false,
-						'type' => 'string'
+					'report_id' => array(  // Changed from month to report_id
+						'required' => true,
+						'type' => 'integer'
 					)
 				)
 			));
@@ -316,11 +316,19 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 		public function api_send_report(WP_REST_Request $request): WP_REST_Response {
 			$user_id = $request->get_param('user_id');
-			$month = $request->get_param('month') ?: date('Ym');
-			
-			$result = pbda_send_attendance_report($user_id, pbda_get_report_id_by_month($month));
-			
-			return new WP_REST_Response($result);
+				$report_id = $request->get_param('report_id');
+				
+				// Verify report exists and is a valid attendance report
+				$report = get_post($report_id);
+				if (!$report || $report->post_type !== 'da_reports') {
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'Invalid report ID'
+					], 400);
+				}
+				
+				$result = pbda_send_attendance_report($user_id, $report_id);
+				return new WP_REST_Response($result);
 		}
 
 
