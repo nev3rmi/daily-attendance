@@ -29,23 +29,23 @@ $current_month = date('Y-m');
         
         <div class="api-method">
             <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
-            <pre><code>{
+            <pre>{
     "userName": "john_doe",
     "passWord": "your_password"
-}</code></pre>
+}</pre>
         </div>
 
         <div class="api-method">
             <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-            <pre><code>{
+            <pre>{
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
     "hash": "<?php echo $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash'; ?>"
-}</code></pre>
+}</pre>
         </div>
 
         <div class="api-method">
             <h4><?php esc_html_e('API Usage Example:', 'daily-attendance'); ?></h4>
-            <pre><code>// Using curl
+            <pre>// Using curl
 curl -X POST <?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?> \
 -H "Content-Type: application/json" \
 -H "Accept: application/json" \
@@ -65,16 +65,16 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
         userName: 'john_doe',
         passWord: 'your_password'
     })
-}).then(r => r.json()).then(console.log);</code></pre>
+}).then(r => r.json()).then(console.log);</pre>
         </div>
 
         <div class="api-response">
             <h4><?php esc_html_e('Response Format:', 'daily-attendance'); ?></h4>
-            <pre><code>{
+            <pre>{
     "version": "V1",
     "success": true,
     "content": "Attendance marked successfully for John Doe"
-}</code></pre>
+}</pre>
         </div>
     </div>
 
