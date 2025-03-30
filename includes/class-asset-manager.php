@@ -25,6 +25,9 @@ class AssetManager {
             $this->version
         );
 
+        // Make sure jQuery is loaded
+        wp_enqueue_script('jquery');
+        
         wp_add_inline_style('pbda_admin_style', '
             .pbda-qr-code {
                 padding: 15px;
@@ -32,6 +35,8 @@ class AssetManager {
                 border-radius: 4px;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                 display: inline-block;
+                min-height: 200px;
+                min-width: 200px;
             }
             .pbda-qr-grid {
                 display: grid;
