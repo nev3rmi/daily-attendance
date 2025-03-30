@@ -145,27 +145,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			// Check for hash authentication first 
 			$hash = isset($params['hash']) ? sanitize_text_field($params['hash']) : '';
 			$user_id = isset($params['user_id']) ? intval($params['user_id']) : 0;
-			$timestamp = isset($params['timestamp']) ? intval($params['timestamp']) : 0;
 
-			if ($hash && $user_id && $timestamp) {
-				// Verify hash authentication
-				$expected_hash = hash_hmac('sha256', $user_id . $timestamp, get_option('pbda_qr_secret'));
+			if ($hash && $user_id) {
+				// Verify hash without timestamp
+				$expected_hash = hash_hmac('sha256', $user_id, get_option('pbda_qr_secret'));
 				
 				if (hash_equals($expected_hash, $hash)) {
-					// Hash is valid, check timestamp (5 minute window)
-					if (time() - $timestamp <= 300) {
-						$response = pbda_insert_attendance($user_id);
-						return new WP_REST_Response(array(
-							'version' => 'V1',
-							'success' => !is_wp_error($response),
-							'content' => is_wp_error($response) ? $response->get_error_message() : $response,
-						));
-					}
-					
+					$response = pbda_insert_attendance($user_id);
 					return new WP_REST_Response(array(
 						'version' => 'V1',
-						'success' => false,
-						'content' => esc_html__('QR code has expired. Please scan again.', 'daily-attendance'),
+						'success' => !is_wp_error($response),
+						'content' => is_wp_error($response) ? $response->get_error_message() : $response,
 					));
 				}
 			}
@@ -240,10 +230,6 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						'type' => 'string',
 					),
 					'user_id' => array(
-						'required' => false,
-						'type' => 'integer',
-					),
-					'timestamp' => array(
 						'required' => false,
 						'type' => 'integer',
 					)

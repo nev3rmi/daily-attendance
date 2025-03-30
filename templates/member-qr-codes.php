@@ -35,7 +35,10 @@ if ($example_user) {
 
         <div class="api-method">
             <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-            <pre><code><?php echo esc_html($example_qr_data); ?></code></pre>
+            <pre><code>{
+    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+    "hash": "<?php echo $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash'; ?>"
+}</code></pre>
         </div>
 
         <div class="api-method">
