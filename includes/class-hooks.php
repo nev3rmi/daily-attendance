@@ -243,7 +243,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			) );
 		}
 
-		private function verify_api_key(): bool {
+		public function verify_api_key(): bool {
 			$api_key = '';
 			
 			// Check header first
