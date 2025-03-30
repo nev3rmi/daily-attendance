@@ -54,45 +54,14 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function columns_content(string $column, int $post_id): void {
 
 			if ( $column == 'actions' ):
+				$nonce = wp_create_nonce('wp_rest');
+				$export_url = rest_url('v1/export-csv/' . $post_id);
 				?>
-				<span class="export-cell">
-					<form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" class="export-form">
-						<input type="hidden" name="action" value="export_attendance_csv">
-						<input type="hidden" name="report_id" value="<?php echo esc_attr($post_id); ?>">
-						<input type="hidden" name="nonce" value="<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>">
-						<button type="submit" class="button export-csv">
-							<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
-						</button>
-					</form>
-				</span>
-				<style>
-					.export-cell { display: inline-block; }
-					.export-form { margin: 0; padding: 0; }
-				</style>
-				<script>
-				jQuery(document).ready(function($) {
-					$('.export-form').on('submit', function(e) {
-						e.preventDefault();
-						const form = $(this);
-						
-						// Create an iframe for download
-						const frame_name = 'download_frame_' + Math.random().toString(36).substring(7);
-						const iframe = $('<iframe>', {
-							name: frame_name,
-							css: {
-								display: 'none'
-							}
-						}).appendTo('body');
-
-						// Set target and submit
-						form.attr('target', frame_name);
-						form.get(0).submit();
-
-						// Cleanup after delay
-						setTimeout(() => iframe.remove(), 5000);
-					});
-				});
-				</script>
+				<a href="<?php echo esc_url($export_url); ?>" 
+				   class="button export-csv" 
+				   data-nonce="<?php echo esc_attr($nonce); ?>">
+					<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+				</a>
 				<?php
 			endif;
 
@@ -282,6 +251,57 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					)
 					)
 			));
+
+			// Add new endpoints for CSV export and report sending
+			register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
+				'methods' => 'GET',
+				'callback' => array($this, 'api_export_csv'),
+				'permission_callback' => array($this, 'check_admin_permission'),
+				'args' => array(
+					'report_id' => array(
+						'required' => true,
+						'type' => 'integer',
+						'validate_callback' => function($param) {
+							return is_numeric($param);
+						}
+					)
+				)
+			));
+
+			register_rest_route('v1', '/send-report', array(
+				'methods' => 'POST',
+				'callback' => array($this, 'api_send_report'),
+				'permission_callback' => array($this, 'check_admin_permission'),
+				'args' => array(
+					'user_id' => array(
+						'required' => true,
+						'type' => 'integer'
+					),
+					'month' => array(
+						'required' => false,
+						'type' => 'string'
+					)
+				)
+			));
+		}
+
+		public function check_admin_permission(): bool {
+			return current_user_can('manage_options');
+		}
+
+		public function api_export_csv(WP_REST_Request $request): void {
+			$report_id = $request->get_param('report_id');
+			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+			ExportManager::generate_csv($report_id);
+		}
+
+		public function api_send_report(WP_REST_Request $request): WP_REST_Response {
+			$user_id = $request->get_param('user_id');
+			$month = $request->get_param('month') ?: date('Ym');
+			
+			$result = pbda_send_attendance_report($user_id, pbda_get_report_id_by_month($month));
+			
+			return new WP_REST_Response($result);
 		}
 
 
