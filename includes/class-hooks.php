@@ -34,6 +34,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			add_action('template_redirect', array($this, 'handle_attendance_submission'));
 			add_action('wp_login', array($this, 'process_attendance_after_login'), 10, 2);
 			add_action('wp_ajax_send_attendance_report', array($this, 'ajax_send_attendance_report'));
+			add_action('wp_ajax_export_attendance_csv', array($this, 'ajax_export_attendance_csv'));
 
 			add_shortcode( 'attendance_form', array( $this, 'display_attendance_form' ) );
 			add_shortcode('attendance_qr', array($this, 'display_qr_code'));
@@ -322,8 +323,11 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
                     <div class="pbda-info">
                         <span class="label"><?php esc_html_e( 'Export', 'daily-attendance' ); ?></span>
-                        <span class="value"><a
-                                    href="<?php echo esc_url( $export_url ); ?>"><?php esc_html_e( 'CSV (Upcoming Feature)', 'daily-attendance' ); ?></a></span>
+                        <span class="value">
+                            <button class="button export-csv" data-report="<?php echo esc_attr($post->ID); ?>">
+                                <?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+                            </button>
+                        </span>
                     </div>
 
                 </div>
@@ -373,6 +377,41 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						}
 					}
 				});
+
+                $('.export-csv').click(function(e) {
+                    e.preventDefault();
+                    const reportId = $(this).data('report');
+                    
+                    // Create form and submit
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': ajaxurl
+                    });
+                    
+                    // Add required fields
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': 'action',
+                        'value': 'export_attendance_csv'
+                    }));
+                    
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': 'report_id',
+                        'value': reportId
+                    }));
+                    
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': 'nonce',
+                        'value': '<?php echo wp_create_nonce("pbda_ajax_nonce"); ?>'
+                    }));
+                    
+                    // Submit form
+                    $('body').append(form);
+                    form.submit();
+                    form.remove();
+                });
 			});
 			</script>
 			<?php
@@ -728,6 +767,24 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			$result = pbda_send_attendance_report($user_id, $report_id);
 			wp_send_json_success($result);
+		}
+
+		public function ajax_export_attendance_csv(): void {
+			check_ajax_referer('pbda_ajax_nonce', 'nonce');
+			
+			if (!current_user_can('manage_options')) {
+				wp_send_json_error('Permission denied');
+				return;
+			}
+			
+			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+			if (!$report_id) {
+				wp_send_json_error('Invalid report ID');
+				return;
+			}
+			
+			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+			ExportManager::generate_csv($report_id);
 		}
 	}
 
