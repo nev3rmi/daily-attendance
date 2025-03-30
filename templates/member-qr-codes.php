@@ -83,18 +83,26 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
         <div class="pbda-email-controls">
             <select id="month-select">
                 <?php 
-                // Get last 12 months of reports
-                for ($i = 0; $i < 12; $i++) {
-                    $date = new DateTime();
-                    $date->modify("-$i months");
-                    $month = $date->format('Ym');
-                    $selected = ($month === date('Ym')) ? 'selected' : '';
-                    printf(
-                        '<option value="%s" %s>%s</option>', 
-                        esc_attr($month),
-                        $selected,
-                        esc_html($date->format('F Y'))
-                    );
+                // Get all existing reports
+                $reports = get_posts(array(
+                    'post_type' => 'da_reports',
+                    'posts_per_page' => -1,
+                    'orderby' => 'meta_value',
+                    'meta_key' => '_month',
+                    'order' => 'DESC'
+                ));
+
+                foreach ($reports as $report) {
+                    $month = get_post_meta($report->ID, '_month', true);
+                    $date = DateTime::createFromFormat('Ym', $month);
+                    if ($date) {
+                        printf(
+                            '<option value="%s" data-report="%d">%s</option>', 
+                            esc_attr($month),
+                            $report->ID,
+                            esc_html($date->format('F Y'))
+                        );
+                    }
                 }
                 ?>
             </select>
