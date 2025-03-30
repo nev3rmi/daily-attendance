@@ -1,0 +1,103 @@
+/*
+Admin css
+*/
+
+.post-php.post-type-da_reports .meta-box-sortables.ui-sortable.empty-container {
+    border: none;
+}
+
+.post-php.post-type-da_reports #poststuff #post-body.columns-2 {
+    width: 100%;
+}
+
+.post-php.post-type-da_reports #post-body.columns-2 #postbox-container-1 {
+    display: none;
+}
+
+.post-php.post-type-da_reports .postbox {
+    box-shadow: none;
+    border: none;
+    margin-top: -20px;
+}
+
+.post-php.post-type-da_reports .postbox .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.post-php.post-type-da_reports .postbox > .handlediv,
+.post-php.post-type-da_reports .postbox > h2 {
+    display: none;
+}
+
+
+.pbda-reports {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-top: 1px solid #d2d2d2;
+    width: 100%;
+}
+
+.pbda-reports tr th,
+.pbda-reports tr td {
+    min-width: 33px;
+    padding: 5px 1px;
+    text-align: center;
+    border: 1px solid #d2d2d2;
+    border-top-width: 0;
+    border-right-width: 0;
+    display: table-cell;
+}
+
+.pbda-reports tr th:last-child,
+.pbda-reports tr td:last-child {
+    border-right-width: 1px;
+}
+
+.pbda-reports tr td.name {
+    text-align: left;
+    min-width: 100px;
+    padding: 8px;
+}
+
+.pbda-reports tr td.yes > i {
+    background: #4CAF50;
+    color: #fff;
+    padding: 3px;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.pbda-reports tr td.yes > i:hover {
+    background: #368039;
+}
+
+.pbda-report-info {
+    padding: 15px 0;
+    background: #f1f1f1;
+    border-top: 1px solid #c5c5c5;
+}
+
+.pbda-report-info .pbda-info > span {
+    display: inline-block;
+    font-size: 15px;
+}
+
+.pbda-report-info .pbda-info {
+    margin-bottom: 10px;
+}
+
+.pbda-report-info .pbda-info span.label {
+    min-width: 120px;
+    font-weight: 600;
+}
+
+.pbda-report-info .pbda-info span a {
+    text-decoration: none;
+}
+
+.pbda-report-created {
+    color: #0bbff2;
+}

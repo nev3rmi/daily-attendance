@@ -1,0 +1,88 @@
+@charset "UTF-8";
+
+/**
+* Normalize CSS
+*/
+
+.pbda-form {
+    width: 320px;
+}
+
+.pbda-form .form-input {
+    margin-bottom: 15px;
+}
+
+.pbda-form .form-input label {
+    display: block;
+    width: 100%;
+    font-size: 16px;
+    line-height: 26px;
+    padding-bottom: 10px;
+}
+
+.pbda-form .form-input input[type="text"] {
+    width: calc(100% - 22px);
+    outline: none;
+    border: 1px solid #dedede;
+    box-shadow: none;
+    padding: 10px;
+    font-size: 14px;
+    line-height: 24px;
+}
+
+.pbda-form .form-input input[type="text"]:read-only {
+    background: #9e9e9e3c;
+    color: #737373;
+}
+
+
+
+.pbda-button {
+    display: inline-block;
+    line-height: normal;
+    padding: 12px 20px;
+    background: #03A9F4;
+    border: 0;
+    border-radius: 2px;
+    color: #fff;
+    transition: 0.3s;
+    min-width: 99px;
+    outline: none;
+    box-shadow: none;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.pbda-button:hover,
+.pbda-button:focus {
+    background: #1d94ca;
+    color: #fff;
+    box-shadow: none;
+}
+
+
+
+/**
+ * Notices
+ */
+
+.pbda-notice {
+    background: #00bcd43b;
+    padding: 10px;
+    border-left: 3px solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.pbda-notice.pbda-warning {
+    background: #ff98003b;
+}
+
+.pbda-notice.pbda-error {
+    background: #ff57223b;
+}
+
+.pbda-notice.pbda-success {
+    background: #4caf503b;
+}
