@@ -140,17 +140,12 @@ class SettingsManager {
         if (!current_user_can('manage_options')) return;
         
         $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'email';
-        $tabs = array(
-            'email' => __('Email Templates', 'daily-attendance'),
-            'notification' => __('Notifications', 'daily-attendance'),
-            'advanced' => __('Advanced', 'daily-attendance')
-        );
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
             <nav class="nav-tab-wrapper">
-                <?php foreach ($tabs as $tab_key => $tab_name): ?>
+                <?php foreach ($this->tabs as $tab_key => $tab_name): ?>
                     <a href="?post_type=da_reports&page=<?php echo $this->settings_page; ?>&tab=<?php echo $tab_key; ?>" 
                        class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
                         <?php echo esc_html($tab_name); ?>
@@ -162,40 +157,8 @@ class SettingsManager {
                 <?php $this->render_email_settings(); ?>
             <?php elseif ($current_tab === 'api'): ?>
                 <?php $this->render_api_documentation(); ?>
-            <?php else: ?>
-                <div class="coming-soon-wrapper">
-                    <div class="coming-soon-content">
-                        <span class="dashicons dashicons-clock"></span>
-                        <h2><?php echo esc_html($tabs[$current_tab]); ?></h2>
-                        <p><?php esc_html_e('This feature is coming soon! Stay tuned for updates.', 'daily-attendance'); ?></p>
-                    </div>
-                </div>
-                <style>
-                    .coming-soon-wrapper {
-                        margin: 50px auto;
-                        text-align: center;
-                        padding: 40px;
-                        background: #fff;
-                        border-radius: 8px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                        max-width: 500px;
-                    }
-                    .coming-soon-content .dashicons {
-                        font-size: 48px;
-                        width: 48px;
-                        height: 48px;
-                        color: #2271b1;
-                        margin-bottom: 20px;
-                    }
-                    .coming-soon-content h2 {
-                        margin: 0 0 15px;
-                        color: #1d2327;
-                    }
-                    .coming-soon-content p {
-                        font-size: 15px;
-                        color: #646970;
-                    }
-                </style>
+            <?php elseif ($current_tab === 'notification'): ?>
+                <?php $this->render_notification_settings(); ?>
             <?php endif; ?>
         </div>
         <?php
