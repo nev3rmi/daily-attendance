@@ -151,31 +151,18 @@ if (!defined('PBDA_VERSION')) {
 // Register activation hook
 register_activation_hook(__FILE__, ['DailyAttendance', 'activate']);
 
-// Instantiate DailyAttendance and store in a variable for callback use
+// Remove the PB_Settings instantiation and replace with just the DailyAttendance instance
 $dailyAttendance = new DailyAttendance();
 
-// Remove the PB_Settings menu registration at the bottom and replace with:
-add_action('admin_menu', function() {
-    // Remove default "All Reports" submenu
-    remove_submenu_page('edit.php?post_type=da_reports', 'edit.php?post_type=da_reports');
-    
-    // Add Report submenu
+// Add admin menu handlers
+add_action('admin_menu', function() use ($dailyAttendance) {
+    // Add View Members submenu under da_reports
     add_submenu_page(
-        'edit.php?post_type=da_reports',
-        'Monthly Report',
-        'Monthly Report', 
-        'manage_options',
-        'monthly-report',
-        [$dailyAttendance, 'render_report_page']
-    );
-    
-    // Add View Members submenu
-    add_submenu_page(
-        'edit.php?post_type=da_reports',
-        'View Members',
-        'View Members',
-        'manage_options', 
-        'view-members',
-        [$dailyAttendance, 'render_view_members_page']
+        'edit.php?post_type=da_reports', // Parent slug
+        'View Members',                   // Page title
+        'View Members',                   // Menu title
+        'manage_options',                 // Capability
+        'view-members',                   // Menu slug
+        [$dailyAttendance, 'render_view_members_page'] // Callback
     );
 });
