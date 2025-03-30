@@ -389,8 +389,12 @@ class SettingsManager {
     }
 
     private function render_api_documentation() {
+        // Get example data for documentation
         $example_user = reset(get_users(['fields' => ['ID', 'user_login']]));
         $example_hash = $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash';
+        $current_site_url = get_site_url();
+        $nonce = wp_create_nonce('wp_rest');
+        
         ?>
         <div class="api-documentation">
             <h2><?php esc_html_e('API Documentation', 'daily-attendance'); ?></h2>
@@ -402,18 +406,24 @@ class SettingsManager {
                 
                 <div class="api-method">
                     <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
-                    <pre>{
-    "userName": "john_doe",
-    "passWord": "your_password"
-}</pre>
+                    <pre><code class="language-bash"># Using cURL
+curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "userName": "<?php echo $example_user ? $example_user->user_login : 'admin'; ?>",
+  "passWord": "your_password"
+}'</code></pre>
                 </div>
 
                 <div class="api-method">
                     <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-                    <pre>{
-    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-    "hash": "<?php echo esc_attr($example_hash); ?>"
-}</pre>
+                    <pre><code class="language-bash"># Using cURL
+curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+  "hash": "<?php echo esc_attr($example_hash); ?>"
+}'</code></pre>
                 </div>
             </div>
 
@@ -422,7 +432,9 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
                 <p><strong>Method:</strong> GET</p>
                 <p><strong>Required:</strong> Admin authentication (nonce)</p>
-                <pre>GET <?php echo esc_html(rest_url('v1/export-csv/123')); ?>?_wpnonce=your_nonce</pre>
+                <pre><code class="language-bash"># Using cURL
+curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?_wpnonce=<?php echo $nonce; ?>" \
+     -H "Cookie: wordpress_logged_in_[your_cookie]"</code></pre>
             </div>
 
             <div class="api-section">
@@ -430,36 +442,82 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Required:</strong> Admin authentication</p>
-                <pre>{
-    "user_id": 123,
-    "month": "202403"  // Optional, defaults to current month
-}</pre>
+                <pre><code class="language-bash"># Using cURL
+curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
+     -H "X-WP-Nonce: <?php echo $nonce; ?>" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+  "month": "<?php echo date('Ym'); ?>"
+}'</code></pre>
             </div>
 
             <div class="api-section">
-                <h3>Example Usage</h3>
-                <pre>// Using curl
-curl -X POST <?php echo esc_url(rest_url('v1/attendances/submit')); ?> \
--H "Content-Type: application/json" \
--H "Accept: application/json" \
--d '{
-    "userName": "john_doe",
-    "passWord": "your_password"
-}'
-
-// Or using fetch API
+                <h3>JavaScript Example</h3>
+                <pre><code class="language-javascript">// Using Fetch API
 fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'X-WP-Nonce': '<?php echo $nonce; ?>'
     },
     body: JSON.stringify({
-        userName: 'john_doe',
+        userName: '<?php echo $example_user ? $example_user->user_login : 'admin'; ?>',
         passWord: 'your_password'
     })
-}).then(r => r.json()).then(console.log);</pre>
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));</code></pre>
             </div>
+
+            <style>
+            .api-documentation {
+                padding: 30px;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .api-section {
+                margin: 30px 0;
+                padding: 20px;
+                border: 1px solid #e5e5e5;
+                border-radius: 4px;
+                background: #f9f9f9;
+            }
+            .api-section h3 {
+                margin-top: 0;
+                color: #2271b1;
+                border-bottom: 2px solid #2271b1;
+                padding-bottom: 10px;
+            }
+            .api-method {
+                margin: 20px 0;
+            }
+            .api-method h4 {
+                color: #1d2327;
+                margin-bottom: 10px;
+            }
+            pre {
+                background: #272822;
+                color: #f8f8f2;
+                padding: 15px;
+                border-radius: 4px;
+                overflow: auto;
+                font-family: monospace;
+            }
+            code {
+                font-family: monospace;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+            .language-bash {
+                color: #a6e22e;
+            }
+            .language-javascript {
+                color: #66d9ef;
+            }
+            </style>
         </div>
         <?php
     }
