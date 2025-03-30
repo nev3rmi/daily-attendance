@@ -68,13 +68,29 @@ class DailyAttendance {
     private function init_admin_menu(): void {
         add_action('admin_menu', function() {
             add_menu_page(
-                'Daily Attendance', 
+                'Daily Attendance',
                 'Daily Attendance',
                 'manage_options',
                 'daily-attendance',
-                [$this, 'render_qr_list_page'],
+                [$this, 'render_report_page'],
                 'dashicons-id-alt',
                 30
+            );
+            add_submenu_page(
+                'daily-attendance',
+                'Report',
+                'Report',
+                'manage_options',
+                'daily-attendance',
+                [$this, 'render_report_page']
+            );
+            add_submenu_page(
+                'daily-attendance',
+                'View Members',
+                'View Members',
+                'manage_options',
+                'view-members',
+                [$this, 'render_view_members_page']
             );
         });
     }
@@ -105,6 +121,37 @@ class DailyAttendance {
         ?>
         <div class="wrap">
             <h1>User QR Codes</h1>
+            <div class="pbda-qr-grid">
+                <?php foreach ($users as $user): ?>
+                    <div class="pbda-qr-item">
+                        <h3><?php echo esc_html($user->user_login); ?></h3>
+                        <div class="pbda-qr-code">
+                            <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=<?php 
+                                echo urlencode($this->generate_qr_data($user->ID)); 
+                            ?>" alt="QR Code">
+                        </div>
+                        <p><?php echo esc_html($user->user_email); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    public function render_report_page(): void {
+        ?>
+        <div class="wrap">
+            <h1>Attendance Report</h1>
+            <p>Report content goes here...</p>
+        </div>
+        <?php
+    }
+
+    public function render_view_members_page(): void {
+        $users = get_users(['fields' => ['ID', 'user_login', 'user_email']]);
+        ?>
+        <div class="wrap">
+            <h1>View Members</h1>
             <div class="pbda-qr-grid">
                 <?php foreach ($users as $user): ?>
                     <div class="pbda-qr-item">
