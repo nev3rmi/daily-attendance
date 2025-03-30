@@ -110,11 +110,12 @@ class DailyAttendance {
     }
 
     private function generate_qr_data($user_id): string {
-        // Generate permanent QR code that doesn't include timestamp
-        return json_encode([
+        // Generate permanent QR code for scanning
+        $data = [
             'user_id' => $user_id,
             'hash' => hash_hmac('sha256', $user_id, self::$qr_secret)
-        ]);
+        ];
+        return json_encode($data);
     }
 
     public static function activate(): void {
