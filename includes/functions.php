@@ -294,6 +294,22 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
         $user_id = get_current_user_id();
     }
 
+    error_log("Starting attendance report for user $user_id from report $report_id");
+
+    // Check SMTP status first
+    $smtp_status = EmailManager::get_smtp_status();
+    if (!$smtp_status['active']) {
+        return array(
+            'status' => 'error',
+            'message' => $smtp_status['message'],
+            'start_time' => current_time('Y-m-d H:i:s'),
+            'smtp_active' => false,
+            'attendance_data' => [],
+            'report_title' => '',
+            'user_id' => $user_id
+        );
+    }
+
     error_log("Sending attendance report for user $user_id from report $report_id");
     
     $user = get_user_by('id', $user_id);

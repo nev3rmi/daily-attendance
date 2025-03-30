@@ -1,10 +1,35 @@
 <?php
 class EmailManager {
-    private static function is_wp_mail_smtp_active(): bool {
-        return class_exists('WPMailSMTP');
+    public static function is_wp_mail_smtp_active(): bool {
+        return class_exists('WPMailSMTP\WP');
+    }
+
+    public static function get_smtp_status(): array {
+        $status = [
+            'active' => false,
+            'message' => ''
+        ];
+
+        if (!self::is_wp_mail_smtp_active()) {
+            $status['message'] = 'WP Mail SMTP plugin is not installed or activated';
+            return $status;
+        }
+
+        // Check if mailer is configured
+        $mail_settings = get_option('wp_mail_smtp', []);
+        if (empty($mail_settings['mail']['mailer'])) {
+            $status['message'] = 'WP Mail SMTP mailer is not configured';
+            return $status;
+        }
+
+        $status['active'] = true;
+        $status['message'] = 'SMTP is configured and active';
+        return $status;
     }
 
     public static function send_attendance_report(int $user_id, array $attendance_data, $report_id = null): array {
+        $smtp_status = self::get_smtp_status();
+        
         $debug_info = [
             'start_time' => current_time('Y-m-d H:i:s'),
             'user_id' => $user_id,
@@ -12,27 +37,17 @@ class EmailManager {
             'attendance_data' => $attendance_data,
             'report_id' => $report_id,
             'report_title' => '',
-            'smtp_active' => self::is_wp_mail_smtp_active(),
+            'smtp_active' => $smtp_status['active'],
+            'smtp_message' => $smtp_status['message'],
             'status' => 'started',
             'message' => ''
         ];
 
-        // Log start of email sending
-        error_log("Starting to send attendance report for user $user_id");
-        error_log("Attendance data: " . print_r($attendance_data, true));
+        error_log("SMTP Status: " . print_r($smtp_status, true));
 
-        if (!self::is_wp_mail_smtp_active()) {
-            error_log("WP Mail SMTP is not active");
-            add_action('admin_notices', function() {
-                ?>
-                <div class="notice notice-error">
-                    <p><?php _e('WP Mail SMTP is required for sending attendance reports. Please install and configure WP Mail SMTP plugin.', 'daily-attendance'); ?></p>
-                    <p><a href="<?php echo admin_url('plugin-install.php?s=wp+mail+smtp&tab=search&type=term'); ?>" class="button button-primary"><?php _e('Install WP Mail SMTP', 'daily-attendance'); ?></a></p>
-                </div>
-                <?php
-            });
+        if (!$smtp_status['active']) {
             $debug_info['status'] = 'error';
-            $debug_info['message'] = 'WP Mail SMTP not active';
+            $debug_info['message'] = $smtp_status['message'];
             return $debug_info;
         }
 
@@ -104,9 +119,20 @@ class EmailManager {
 
         error_log("Email send result: " . ($sent ? 'Success' : 'Failed'));
 
-        $debug_info['status'] = $sent ? 'success' : 'failed';
-        $debug_info['message'] = $sent ? 'Email sent successfully' : 'Failed to send email';
+        if ($sent) {
+            $debug_info['status'] = 'success';
+            $debug_info['message'] = sprintf(
+                'Email sent successfully to %s with %d attendance records',
+                $user->user_email,
+                count($attendance_data)
+            );
+        } else {
+            $debug_info['status'] = 'error';
+            $debug_info['message'] = 'Failed to send email: ' . error_get_last()['message'] ?? 'Unknown error';
+        }
+
         $debug_info['end_time'] = current_time('Y-m-d H:i:s');
+        error_log("Email send complete: " . print_r($debug_info, true));
 
         return $debug_info;
     }
