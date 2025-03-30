@@ -52,18 +52,41 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 * @param $post_id
 		 */
 		public function columns_content(string $column, int $post_id): void {
-
-			if ( $column == 'actions' ):
+			if ($column == 'actions'):
 				$nonce = wp_create_nonce('wp_rest');
 				$export_url = rest_url("v1/export-csv/{$post_id}") . "?_wpnonce={$nonce}";
 				?>
 				<div class="row-actions">
-					<span class="export">
-						<a href="<?php echo esc_url($export_url); ?>">
+					<span class="export-csv-action">
+						<a href="<?php echo esc_url($export_url); ?>" class="export-csv" data-nonce="<?php echo esc_attr($nonce); ?>" data-report="<?php echo esc_attr($post_id); ?>">
 							<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
 						</a>
 					</span>
 				</div>
+				<script>
+				jQuery(document).ready(function($) {
+					$('.export-csv').on('click', function(e) {
+						e.preventDefault();
+						const url = $(this).attr('href');
+						const nonce = $(this).data('nonce');
+						
+						const form = $('<form>', {
+							'method': 'GET',
+							'action': url
+						});
+						
+						form.append($('<input>', {
+							'type': 'hidden',
+							'name': '_wpnonce',
+							'value': nonce
+						}));
+						
+						$('body').append(form);
+						form.submit();
+						form.remove();
+					});
+				});
+				</script>
 				<?php
 			endif;
 
