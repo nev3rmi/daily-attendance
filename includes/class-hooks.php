@@ -55,9 +55,44 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			if ( $column == 'actions' ):
 				?>
-				<button class="button export-csv" data-report="<?php echo esc_attr($post_id); ?>">
-					<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
-				</button>
+				<span class="export-cell">
+					<form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>" class="export-form">
+						<input type="hidden" name="action" value="export_attendance_csv">
+						<input type="hidden" name="report_id" value="<?php echo esc_attr($post_id); ?>">
+						<input type="hidden" name="nonce" value="<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>">
+						<button type="submit" class="button export-csv">
+							<?php esc_html_e('Export to CSV', 'daily-attendance'); ?>
+						</button>
+					</form>
+				</span>
+				<style>
+					.export-cell { display: inline-block; }
+					.export-form { margin: 0; padding: 0; }
+				</style>
+				<script>
+				jQuery(document).ready(function($) {
+					$('.export-form').on('submit', function(e) {
+						e.preventDefault();
+						const form = $(this);
+						
+						// Create an iframe for download
+						const frame_name = 'download_frame_' + Math.random().toString(36).substring(7);
+						const iframe = $('<iframe>', {
+							name: frame_name,
+							css: {
+								display: 'none'
+							}
+						}).appendTo('body');
+
+						// Set target and submit
+						form.attr('target', frame_name);
+						form.get(0).submit();
+
+						// Cleanup after delay
+						setTimeout(() => iframe.remove(), 5000);
+					});
+				});
+				</script>
 				<?php
 			endif;
 
@@ -774,36 +809,35 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function ajax_export_attendance_csv(): void {
-			error_log('Export CSV request received');
-			error_log('POST data: ' . print_r($_POST, true));
-			error_log('GET data: ' . print_r($_GET, true));
-
-			// Verify nonce first
-			if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pbda_ajax_nonce')) {
-				error_log('Nonce verification failed');
-				wp_die('Invalid nonce');
-			}
-
-			if (!current_user_can('manage_options')) {
-				error_log('Permission denied for user');
-				wp_die('Permission denied');
-			}
-			
-			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
-			error_log('Report ID: ' . $report_id);
-			
-			if (!$report_id) {
-				error_log('Invalid report ID');
-				wp_die('Invalid report ID');
-			}
-
-			// Load and use the ExportManager
-			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
 			try {
+				error_log('Export CSV request started');
+				
+				// Check nonce
+				if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'pbda_ajax_nonce')) {
+					throw new Exception('Security check failed');
+				}
+				
+				// Check permissions
+				if (!current_user_can('manage_options')) {
+					throw new Exception('Permission denied');
+				}
+				
+				// Get report ID
+				$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+				if (!$report_id) {
+					throw new Exception('Invalid report ID');
+				}
+
+				error_log("Exporting CSV for report ID: $report_id");
+				
+				// Generate CSV
+				require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
 				ExportManager::generate_csv($report_id);
+				
+				// ExportManager handles the exit
 			} catch (Exception $e) {
-				error_log('Export failed: ' . $e->getMessage());
-				wp_die('Export failed: ' . $e->getMessage());
+				error_log('CSV Export error: ' . $e->getMessage());
+				wp_die($e->getMessage());
 			}
 		}
 	}
