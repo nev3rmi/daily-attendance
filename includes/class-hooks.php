@@ -247,17 +247,23 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			$api_key = '';
 			
 			// Check header first
-			$headers = getallheaders();
+			$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
 			if (isset($headers['X-API-Key'])) {
 				$api_key = $headers['X-API-Key'];
 			}
 			
 			// Check GET parameter if not in header
 			if (empty($api_key) && isset($_GET['api_key'])) {
-				$api_key = $_GET['api_key'];
+				$api_key = sanitize_text_field($_GET['api_key']);
 			}
 			
-			return $api_key === get_option('pbda_api_key', '');
+			// Check POST parameter if not in GET
+			if (empty($api_key) && isset($_POST['api_key'])) {
+				$api_key = sanitize_text_field($_POST['api_key']);
+			}
+			
+			$stored_key = get_option('pbda_api_key', '');
+			return !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
 		}
 
 		public function register_api(): void {
@@ -286,17 +292,21 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					)
 			));
 
-			 // Protected endpoints (requires API key)
-			 register_rest_route('v1', '/reports', array(
+			 // Admin endpoints (requires WP admin login)
+			 register_rest_route('v1', '/admin/reports', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
-				'permission_callback' => array($this, 'verify_api_key')
+				'permission_callback' => function() {
+					return current_user_can('manage_options');
+				}
 			));
 		
-			register_rest_route('v1', '/send-report-all', array(
+			register_rest_route('v1', '/admin/send-report-all', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report_all'),
-				'permission_callback' => array($this, 'verify_api_key'),
+				'permission_callback' => function() {
+					return current_user_can('manage_options');
+				},
 				'args' => array(
 					'report_id' => array(
 						'required' => true,
@@ -305,8 +315,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				)
 			));
 
-			// Add new endpoints for CSV export and report sending
-			register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
+			 // API key endpoints
+			 register_rest_route('v1', '/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
 				'permission_callback' => array($this, 'verify_api_key'),

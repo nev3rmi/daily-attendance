@@ -398,82 +398,113 @@ class SettingsManager {
         }
         ?>
         <div class="api-documentation">
-            <div class="api-key-section">
-                <h3>API Authentication</h3>
-                <p><strong>Your API Key:</strong> <code><?php echo esc_html($api_key); ?></code></p>
-                <button id="regenerate-api-key" class="button">Regenerate API Key</button>
-                <div class="api-auth-info">
-                    <p class="api-note"><strong>Note:</strong> Some endpoints are public and don't require authentication, while others require an API key.</p>
-                </div>
+            <div class="api-sections-nav">
+                <h3>API Endpoints</h3>
+                <ul class="api-nav">
+                    <li><a href="#public-endpoints">Public Endpoints</a></li>
+                    <li><a href="#admin-endpoints">Admin Endpoints</a></li>
+                    <li><a href="#api-key-endpoints">API Key Endpoints</a></li>
+                </ul>
             </div>
 
-            <h2>Public Endpoints</h2>
-            <div class="api-section">
-                <h3>1. Mark Attendance</h3>
-                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/attendances/submit')); ?></code></p>
-                <p><strong>Method:</strong> POST</p>
-                
-                <div class="api-method">
-                    <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
-                    <pre><code class="language-bash"># Using cURL
+            <div id="public-endpoints">
+                <h2>Public Endpoints</h2>
+                <div class="api-section">
+                    <h3>1. Mark Attendance</h3>
+                    <p>No authentication required</p>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/attendances/submit')); ?></code></p>
+                    <p><strong>Method:</strong> POST</p>
+                    
+                    <div class="api-method">
+                        <h4><?php esc_html_e('Method 1: Username/Password', 'daily-attendance'); ?></h4>
+                        <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
   "userName": "<?php echo $example_user ? $example_user->user_login : 'admin'; ?>",
   "passWord": "your_password"
 }'</code></pre>
-                </div>
+                    </div>
 
-                <div class="api-method">
-                    <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
-                    <pre><code class="language-bash"># Using cURL
+                    <div class="api-method">
+                        <h4><?php esc_html_e('Method 2: QR Code Hash', 'daily-attendance'); ?></h4>
+                        <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/attendances/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
   "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
   "hash": "<?php echo esc_attr($example_hash); ?>"
 }'</code></pre>
+                    </div>
                 </div>
             </div>
 
-            <h2>Protected Endpoints (Requires API Key)</h2>
-            <div class="api-section">
-                <h3>1. List All Reports</h3>
-                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/reports')); ?></code></p>
-                <p><strong>Method:</strong> GET</p>
-                <pre><code class="language-bash"># Using cURL
-curl -X GET "<?php echo esc_url(rest_url('v1/reports')); ?>" \
-     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
-            </div>
+            <div id="admin-endpoints">
+                <h2>Admin Endpoints (Requires WordPress Admin Login)</h2>
+                <div class="api-section">
+                    <h3>1. List All Reports</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/admin/reports')); ?></code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Required:</strong> WordPress admin login</p>
+                    <pre><code class="language-bash"># Using cURL with cookie authentication
+curl -X GET "<?php echo esc_url(rest_url('v1/admin/reports')); ?>" \
+     -H "Cookie: wordpress_logged_in_[your_cookie_hash]"</code></pre>
+                </div>
 
-            <div class="api-section">
-                <h3>2. Send Report to All Users</h3>
-                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report-all')); ?></code></p>
-                <p><strong>Method:</strong> POST</p>
-                <pre><code class="language-bash"># Using cURL
+                <div class="api-section">
+                    <h3>2. Send Report to All Users</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/admin/send-report-all')); ?></code></p>
+                    <p><strong>Method:</strong> POST</p>
+                    <p><strong>Required:</strong> WordPress admin login</p>
+                    <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/send-report-all')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
     "report_id": 123  // ID of an existing attendance report
 }'</code></pre>
+                </div>
             </div>
 
-            <div class="api-section">
-                <h3>3. Export Report to CSV</h3>
-                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
-                <p><strong>Method:</strong> GET</p>
-                <p><strong>Required:</strong> API Key authentication</p>
-                <pre><code class="language-bash"># Using cURL
+            <div id="api-key-endpoints">
+                <h2>API Key Endpoints</h2>
+                <div class="api-section">
+                    <h3>1. List All Reports</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/reports')); ?></code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <pre><code class="language-bash"># Using cURL
+curl -X GET "<?php echo esc_url(rest_url('v1/reports')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
+                </div>
+
+                <div class="api-section">
+                    <h3>2. Send Report to All Users</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report-all')); ?></code></p>
+                    <p><strong>Method:</strong> POST</p>
+                    <pre><code class="language-bash"># Using cURL
+curl -X POST "<?php echo esc_url(rest_url('v1/send-report-all')); ?>" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     -d '{
+    "report_id": 123  // ID of an existing attendance report
+}'</code></pre>
+                </div>
+
+                <div class="api-section">
+                    <h3>3. Export Report to CSV</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/export-csv/{report_id}')); ?></code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Required:</strong> API Key authentication</p>
+                    <pre><code class="language-bash"># Using cURL
 curl -X GET "<?php echo esc_url(rest_url('v1/export-csv/123')); ?>?api_key=<?php echo esc_attr($api_key); ?>"</code></pre>
-            </div>
+                </div>
 
-            <div class="api-section">
-                <h3>4. Send Individual Report</h3>
-                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
-                <p><strong>Method:</strong> POST</p>
-                <p><strong>Required:</strong> API Key authentication</p>
-                <pre><code class="language-bash"># Using cURL
+                <div class="api-section">
+                    <h3>4. Send Individual Report</h3>
+                    <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/send-report')); ?></code></p>
+                    <p><strong>Method:</strong> POST</p>
+                    <p><strong>Required:</strong> API Key authentication</p>
+                    <pre><code class="language-bash"># Using cURL
 curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
@@ -481,11 +512,11 @@ curl -X POST "<?php echo esc_url(rest_url('v1/send-report')); ?>" \
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
     "report_id": 123  // ID of an existing attendance report
 }'</code></pre>
-            </div>
+                </div>
 
-            <div class="api-section">
-                <h3>JavaScript Example</h3>
-                <pre><code class="language-javascript">// Using Fetch API
+                <div class="api-section">
+                    <h3>JavaScript Example</h3>
+                    <pre><code class="language-javascript">// Using Fetch API
 fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
     method: 'POST',
     headers: {
@@ -500,9 +531,25 @@ fetch('<?php echo esc_url(rest_url('v1/attendances/submit')); ?>', {
 .then(response => response.json())
 .then(data => console.log(data))
 .catch(error => console.error('Error:', error));</code></pre>
+                </div>
             </div>
 
             <style>
+            .api-sections-nav {
+                background: #fff;
+                padding: 15px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+            }
+            .api-nav {
+                list-style: none;
+                padding: 0;
+                margin: 10px 0;
+            }
+            .api-nav li {
+                display: inline-block;
+                margin-right: 15px;
+            }
             .api-documentation {
                 padding: 30px;
                 background: #fff;
