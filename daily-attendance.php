@@ -24,6 +24,13 @@ define( 'PBDA_PLUGIN_URL', WP_PLUGIN_URL . '/' . plugin_basename( dirname( __FIL
 define( 'PBDA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PBDA_PLUGIN_FILE', plugin_basename( __FILE__ ) );
 
+// Load dependencies first
+require_once(PBDA_PLUGIN_DIR . 'includes/class-asset-manager.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
+require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
+
 /**
  * Class DailyAttendance
  */
@@ -34,20 +41,11 @@ class DailyAttendance {
      * DailyAttendance constructor.
      */
     public function __construct() {
+        if (!class_exists('AssetManager')) {
+            wp_die('AssetManager class not found. Please check if the plugin is installed correctly.');
+        }
         $this->asset_manager = new AssetManager();
-        $this->load_dependencies();
         $this->init_hooks();
-    }
-
-    /**
-     * Loading dependencies
-     */
-    private function load_dependencies(): void {
-        require_once(PBDA_PLUGIN_DIR . 'includes/class-asset-manager.php');
-        require_once(PBDA_PLUGIN_DIR . 'includes/class-pb-settings.php');
-        require_once(PBDA_PLUGIN_DIR . 'includes/functions.php');
-        require_once(PBDA_PLUGIN_DIR . 'includes/class-functions.php');
-        require_once(PBDA_PLUGIN_DIR . 'includes/class-hooks.php');
     }
 
     /**
@@ -57,6 +55,11 @@ class DailyAttendance {
         add_action('wp_enqueue_scripts', [$this->asset_manager, 'enqueue_frontend_assets']);
         add_action('admin_enqueue_scripts', [$this->asset_manager, 'enqueue_admin_assets']);
     }
+}
+
+// Define plugin version if not already defined
+if (!defined('PBDA_VERSION')) {
+    define('PBDA_VERSION', '1.0.2');
 }
 
 new DailyAttendance();
