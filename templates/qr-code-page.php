@@ -55,49 +55,49 @@ jQuery(document).ready(function($) {
             return;
         }
         function onScanSuccess(decodedText) {
-            // try {
-            //     const qrData = JSON.parse(decodedText);
-            //     if (qrData.user_id && qrData.hash) {
-            //         $.ajax({
-            //             url: attendanceEndpoint,
-            //             method: 'POST',
-            //             contentType: 'application/json',
-            //             data: JSON.stringify(qrData),
-            //             success: function(response) {
-            //                 if (response.success) {
-            //                     // Update #scanResult with the success message (include user name if available)
-            //                     $('#scanResult').html(response.content);
-            //                     // Clear the result after 3 seconds
-            //                     setTimeout(function() {
-            //                         $('#scanResult').html('');
-            //                     }, 3000);
-            //                 } else {
-            //                     $('#scanResult').html('<?php esc_html_e('Attendance failed:', 'daily-attendance'); ?> ' + response.content);
-            //                     setTimeout(function() {
-            //                         $('#scanResult').html('');
-            //                     }, 3000);
-            //                 }
-            //             },
-            //             error: function() {
-            //                 $('#scanResult').html('<?php esc_html_e('An error occurred while submitting attendance.', 'daily-attendance'); ?>');
-            //                 setTimeout(function() {
-            //                     $('#scanResult').html('');
-            //                 }, 3000);
-            //             }
-            //         });
-            //     } else {
-            //         $('#scanResult').html('<?php esc_html_e('Invalid QR code data.', 'daily-attendance'); ?>');
-            //         setTimeout(function() {
-            //             $('#scanResult').html('');
-            //         }, 3000);
-            //     }
-            // } catch (e) {
-            //     $('#scanResult').html('<?php esc_html_e('Failed to parse QR code data.', 'daily-attendance'); ?>');
-            //     setTimeout(function() {
-            //         $('#scanResult').html('');
-            //     }, 3000);
-            // }
-            console.log('Find QR code:', decodedText);
+            try {
+                const qrData = JSON.parse(decodedText);
+                if (qrData.user_id && qrData.hash) {
+                    $.ajax({
+                        url: attendanceEndpoint,
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(qrData),
+                        success: function(response) {
+                            if (response.success) {
+                                // Update #scanResult with the success message (include user name if available)
+                                $('#scanResult').html(response.content);
+                                // Clear the result after 3 seconds
+                                setTimeout(function() {
+                                    $('#scanResult').html('');
+                                }, 3000);
+                            } else {
+                                $('#scanResult').html('<?php esc_html_e('Attendance failed:', 'daily-attendance'); ?> ' + response.content);
+                                setTimeout(function() {
+                                    $('#scanResult').html('');
+                                }, 3000);
+                            }
+                        },
+                        error: function() {
+                            $('#scanResult').html('<?php esc_html_e('An error occurred while submitting attendance.', 'daily-attendance'); ?>');
+                            setTimeout(function() {
+                                $('#scanResult').html('');
+                            }, 3000);
+                        }
+                    });
+                } else {
+                    $('#scanResult').html('<?php esc_html_e('Invalid QR code data.', 'daily-attendance'); ?>');
+                    setTimeout(function() {
+                        $('#scanResult').html('');
+                    }, 3000);
+                }
+            } catch (e) {
+                $('#scanResult').html('<?php esc_html_e('Failed to parse QR code data.', 'daily-attendance'); ?>');
+                setTimeout(function() {
+                    $('#scanResult').html('');
+                }, 3000);
+            }
+            // console.log('Find QR code:', decodedText);
         }
         function onScanFailure(error) {
             if (error && error.indexOf("No MultiFormat Readers") !== -1) {
