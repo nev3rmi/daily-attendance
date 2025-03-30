@@ -125,9 +125,46 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 
 		public function serve_attendances_submit(): WP_REST_Response {
+			// Check for hash authentication first
+			$hash = isset($_POST['hash']) ? sanitize_text_field($_POST['hash']) : '';
+			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+			$timestamp = isset($_POST['timestamp']) ? intval($_POST['timestamp']) : 0;
 
-			$user_name    = isset( $_POST['userName'] ) ? sanitize_text_field( $_POST['userName'] ) : '';
-			$password     = isset( $_POST['passWord'] ) ? sanitize_text_field( $_POST['passWord'] ) : '';
+			if ($hash && $user_id && $timestamp) {
+				// Verify hash authentication
+				$expected_hash = hash_hmac('sha256', $user_id . $timestamp, get_option('pbda_qr_secret'));
+				
+				if (hash_equals($expected_hash, $hash)) {
+					// Hash is valid, check timestamp (5 minute window)
+					if (time() - $timestamp <= 300) {
+						$response = pbda_insert_attendance($user_id);
+						return new WP_REST_Response(array(
+							'version' => 'V1',
+							'success' => !is_wp_error($response),
+							'content' => is_wp_error($response) ? $response->get_error_message() : $response,
+						));
+					}
+					
+					return new WP_REST_Response(array(
+						'version' => 'V1',
+						'success' => false,
+						'content' => esc_html__('QR code has expired. Please scan again.', 'daily-attendance'),
+					));
+				}
+			}
+
+			// Fallback to username/password authentication
+			$user_name = isset($_POST['userName']) ? sanitize_text_field($_POST['userName']) : '';
+			$password = isset($_POST['passWord']) ? sanitize_text_field($_POST['passWord']) : '';
+			
+			if (empty($user_name) || empty($password)) {
+				return new WP_REST_Response(array(
+					'version' => 'V1',
+					'success' => false,
+					'content' => esc_html__('Invalid authentication method', 'daily-attendance'),
+				));
+			}
+
 			$current_user = wp_authenticate( $user_name, $password );
 
 			if ( is_wp_error( $current_user ) ) {
@@ -171,16 +208,31 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'permission_callback' => '__return_true',
 				'args' => array(
 					'userName' => array(
-						'required' => true,
+						'required' => false,
 						'type' => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description' => 'WordPress username',
 					),
 					'passWord' => array(
-						'required' => true,
+						'required' => false,
 						'type' => 'string',
 						'description' => 'WordPress password',
 					),
+					'hash' => array(
+						'required' => false,
+						'type' => 'string',
+						'description' => 'QR code hash for authentication',
+					),
+					'user_id' => array(
+						'required' => false,
+						'type' => 'integer',
+						'description' => 'User ID for hash authentication',
+					),
+					'timestamp' => array(
+						'required' => false,
+						'type' => 'integer',
+						'description' => 'Timestamp for hash authentication',
+					)
 				),
 			));
 		}
