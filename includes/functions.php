@@ -375,18 +375,42 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
 }
 
 function pbda_get_report_id_by_month($month) {
-    $args = array(
+    $reports = pbda_get_all_reports();
+    foreach ($reports as $report) {
+        if ($report['month'] === $month) {
+            return $report['id'];
+        }
+    }
+    return false;
+}
+
+function pbda_get_all_reports() {
+    $reports = get_posts(array(
         'post_type' => 'da_reports',
-        'posts_per_page' => 1,
-        'meta_query' => array(
-            array(
-                'key' => '_month',
-                'value' => $month,
-                'compare' => '='
-            )
-        )
-    );
-    
-    $query = new WP_Query($args);
-    return $query->have_posts() ? $query->posts[0]->ID : false;
+        'posts_per_page' => -1,
+        'orderby' => array(
+            'meta_value' => 'DESC',
+            'date' => 'DESC'
+        ),
+        'meta_key' => '_month',
+    ));
+
+    $formatted_reports = array();
+    foreach ($reports as $report) {
+        $month = get_post_meta($report->ID, '_month', true);
+        $date = DateTime::createFromFormat('Ym', $month);
+        if ($date) {
+            $formatted_reports[] = array(
+                'id' => $report->ID,
+                'title' => $report->post_title,
+                'month' => $month,
+                'formatted_date' => $date->format('F Y'),
+                'month_number' => $date->format('m'),
+                'year' => $date->format('Y'),
+                'created' => $report->post_date
+            );
+        }
+    }
+
+    return $formatted_reports;
 }

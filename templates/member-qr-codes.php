@@ -27,26 +27,14 @@ $current_month = date('Y-m');
         <div class="pbda-email-controls">
             <select id="month-select">
                 <?php 
-                // Get all existing reports
-                $reports = get_posts(array(
-                    'post_type' => 'da_reports',
-                    'posts_per_page' => -1,
-                    'orderby' => 'meta_value',
-                    'meta_key' => '_month',
-                    'order' => 'DESC'
-                ));
-
+                $reports = pbda_get_all_reports();
                 foreach ($reports as $report) {
-                    $month = get_post_meta($report->ID, '_month', true);
-                    $date = DateTime::createFromFormat('Ym', $month);
-                    if ($date) {
-                        printf(
-                            '<option value="%s" data-report="%d">%s</option>', 
-                            esc_attr($month),
-                            $report->ID,
-                            esc_html($date->format('F Y'))
-                        );
-                    }
+                    printf(
+                        '<option value="%s" data-report="%d">%s</option>', 
+                        esc_attr($report['month']),
+                        $report['id'],
+                        esc_html($report['formatted_date'])
+                    );
                 }
                 ?>
             </select>
