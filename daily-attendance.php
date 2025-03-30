@@ -3,7 +3,7 @@
  * Plugin Name: QR Code Attendance System
  * Plugin URI:  https://toho.vn/qr-attendance
  * Description: Modern attendance tracking system with QR code support and mobile-friendly interface
- * Version:     1.0.2
+ * Version:     1.0.4
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Tested up to: 6.7.2
@@ -132,7 +132,7 @@ class DailyAttendance {
 
 // Define plugin version if not already defined
 if (!defined('PBDA_VERSION')) {
-    define('PBDA_VERSION', '1.0.2');
+    define('PBDA_VERSION', '1.0.4');
 }
 
 // Register activation hook
