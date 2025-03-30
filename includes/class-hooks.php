@@ -261,6 +261,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function register_api(): void {
+			// Public endpoints (no API key required)
 			register_rest_route('v1', '/attendances/submit', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'serve_attendances_submit'),
@@ -283,6 +284,25 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 						'type' => 'integer',
 					)
 					)
+			));
+
+			 // Protected endpoints (requires API key)
+			 register_rest_route('v1', '/reports', array(
+				'methods' => 'GET',
+				'callback' => array($this, 'api_get_reports'),
+				'permission_callback' => array($this, 'verify_api_key')
+			));
+		
+			register_rest_route('v1', '/send-report-all', array(
+				'methods' => 'POST',
+				'callback' => array($this, 'api_send_report_all'),
+				'permission_callback' => array($this, 'verify_api_key'),
+				'args' => array(
+					'report_id' => array(
+						'required' => true,
+						'type' => 'integer'
+					)
+				)
 			));
 
 			// Add new endpoints for CSV export and report sending
@@ -360,6 +380,45 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				return new WP_REST_Response($result);
 		}
 
+		public function api_get_reports(): WP_REST_Response {
+			$reports = pbda_get_all_reports();
+			return new WP_REST_Response([
+				'success' => true,
+				'data' => $reports
+			]);
+		}
+		
+		public function api_send_report_all(WP_REST_Request $request): WP_REST_Response {
+			$report_id = $request->get_param('report_id');
+			
+			// Verify report exists
+			$report = get_post($report_id);
+			if (!$report || $report->post_type !== 'da_reports') {
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Invalid report ID'
+				], 400);
+			}
+		
+			// Get all users
+			$users = get_users(['fields' => ['ID']]);
+			$results = [];
+		
+			// Send report to each user
+			foreach ($users as $user) {
+				$result = pbda_send_attendance_report($user->ID, $report_id);
+				$results[] = [
+					'user_id' => $user->ID,
+					'status' => $result['status'],
+					'message' => $result['message']
+				];
+			}
+		
+			return new WP_REST_Response([
+				'success' => true,
+				'data' => $results
+			]);
+		}
 
 		/**
 		 * Display attendance form
