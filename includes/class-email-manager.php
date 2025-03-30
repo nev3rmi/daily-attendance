@@ -4,7 +4,19 @@ class EmailManager {
         return class_exists('WPMailSMTP');
     }
 
-    public static function send_attendance_report(int $user_id, array $attendance_data, $report_id = null): bool {
+    public static function send_attendance_report(int $user_id, array $attendance_data, $report_id = null): array {
+        $debug_info = [
+            'start_time' => current_time('Y-m-d H:i:s'),
+            'user_id' => $user_id,
+            'user_email' => '',
+            'attendance_data' => $attendance_data,
+            'report_id' => $report_id,
+            'report_title' => '',
+            'smtp_active' => self::is_wp_mail_smtp_active(),
+            'status' => 'started',
+            'message' => ''
+        ];
+
         // Log start of email sending
         error_log("Starting to send attendance report for user $user_id");
         error_log("Attendance data: " . print_r($attendance_data, true));
@@ -19,14 +31,20 @@ class EmailManager {
                 </div>
                 <?php
             });
-            return false;
+            $debug_info['status'] = 'error';
+            $debug_info['message'] = 'WP Mail SMTP not active';
+            return $debug_info;
         }
 
         $user = get_user_by('id', $user_id);
         if (!$user) {
             error_log("User not found: $user_id");
-            return false;
+            $debug_info['status'] = 'error';
+            $debug_info['message'] = "User not found: $user_id";
+            return $debug_info;
         }
+
+        $debug_info['user_email'] = $user->user_email;
 
         // Get report title if report_id is provided
         $report_title = '';
@@ -34,6 +52,7 @@ class EmailManager {
             $report = get_post($report_id);
             $report_title = $report ? $report->post_title : '';
             error_log("Report title: $report_title");
+            $debug_info['report_title'] = $report_title;
         }
 
         $subject = $report_title ? 
@@ -67,6 +86,10 @@ class EmailManager {
 
         error_log("Email send result: " . ($sent ? 'Success' : 'Failed'));
 
-        return $sent;
+        $debug_info['status'] = $sent ? 'success' : 'failed';
+        $debug_info['message'] = $sent ? 'Email sent successfully' : 'Failed to send email';
+        $debug_info['end_time'] = current_time('Y-m-d H:i:s');
+
+        return $debug_info;
     }
 }

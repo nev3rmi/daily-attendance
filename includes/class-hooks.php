@@ -716,12 +716,12 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				return;
 			}
 
-			$sent = pbda_send_attendance_report($user_id, $report_id);
+			$result = pbda_send_attendance_report($user_id, $report_id);
 			
-			if (is_wp_error($sent)) {
-				wp_send_json_error($sent->get_error_message());
+			if (isset($result['status']) && $result['status'] === 'success') {
+				wp_send_json_success($result);
 			} else {
-				wp_send_json_success(__('Report sent successfully', 'daily-attendance'));
+				wp_send_json_error($result);
 			}
 		}
 	}

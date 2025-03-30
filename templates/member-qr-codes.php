@@ -142,6 +142,12 @@ fetch('<?php echo esc_url(get_rest_url(null, 'v1/attendances/submit')); ?>', {
                 });
             </script>
         <?php endforeach; ?>
+    </div><!-- end of pbda-qr-grid -->
+
+    <!-- Add debug log area -->
+    <div class="pbda-debug-log">
+        <h3><?php esc_html_e('Email Debug Log', 'daily-attendance'); ?></h3>
+        <div id="debug-log-content"></div>
     </div>
 </div>
 
@@ -217,11 +223,61 @@ code {
     background: #ffebee;
     color: #c62828;
 }
+
+.pbda-debug-log {
+    margin-top: 30px;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.pbda-debug-log h3 {
+    margin-top: 0;
+}
+
+.debug-entry {
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border-left: 4px solid #ccc;
+}
+
+.debug-entry.success {
+    border-left-color: #4CAF50;
+}
+
+.debug-entry.error {
+    border-left-color: #f44336;
+}
+
+.debug-entry pre {
+    background: #f5f5f5;
+    padding: 10px;
+    margin: 10px 0;
+    overflow-x: auto;
+}
 </style>
 
 <script>
 jQuery(document).ready(function($) {
     // ...existing QR code generation code...
+
+    function addDebugEntry(data) {
+        const entryHtml = `
+            <div class="debug-entry ${data.status}">
+                <strong>Time:</strong> ${data.start_time} - ${data.end_time || 'N/A'}<br>
+                <strong>User:</strong> ID ${data.user_id} (${data.user_email || 'N/A'})<br>
+                <strong>Status:</strong> ${data.status}<br>
+                <strong>Message:</strong> ${data.message}<br>
+                <strong>SMTP Active:</strong> ${data.smtp_active ? 'Yes' : 'No'}<br>
+                <strong>Report:</strong> ${data.report_title || 'N/A'} (ID: ${data.report_id || 'N/A'})<br>
+                <strong>Attendance Data:</strong>
+                <pre>${JSON.stringify(data.attendance_data, null, 2)}</pre>
+            </div>
+        `;
+        $('#debug-log-content').prepend(entryHtml);
+    }
 
     function sendReport(userId) {
         const month = $('#month-select').val();
@@ -240,15 +296,24 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    $status.html(response.data).addClass('status-success').removeClass('status-error');
+                    $status.html(response.data.message).addClass('status-success').removeClass('status-error');
+                    addDebugEntry(response.data);
                 } else {
                     $status.html(response.data).addClass('status-error').removeClass('status-success');
                 }
                 setTimeout(() => $status.html(''), 5000);
             },
             error: function() {
+                const errorData = {
+                    status: 'error',
+                    message: 'AJAX request failed',
+                    start_time: new Date().toISOString(),
+                    user_id: userId,
+                    smtp_active: false
+                };
                 $status.html('<?php esc_html_e('Failed to send report', 'daily-attendance'); ?>')
                     .addClass('status-error').removeClass('status-success');
+                addDebugEntry(errorData);
                 setTimeout(() => $status.html(''), 5000);
             }
         });
