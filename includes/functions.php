@@ -76,43 +76,54 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 	 * @return array|WP_Error
 	 */
 	function pbda_get_user_attendance( $user_id = false, $report_id = false ) {
+		error_log("Getting attendance for user $user_id from report $report_id");
 
 		$attendances = array();
-		$user_id     = $user_id ?: get_current_user_id();
-		$report_id   = $report_id ?: pbda_current_report_id();
+		$user_id = $user_id ?: get_current_user_id();
+		$report_id = $report_id ?: pbda_current_report_id();
 
-		if ( $user_id === 0 || $user_id === false ) {
-			return new WP_Error( 'invalid_user', esc_html__( 'Invalid user information', 'daily-attendance' ) );
+		if ($user_id === 0 || $user_id === false) {
+			error_log("Invalid user ID");
+			return new WP_Error('invalid_user', esc_html__('Invalid user information', 'daily-attendance'));
 		}
 
-		if ( $report_id === 0 || $report_id === false ) {
-			return new WP_Error( 'invalid_report', esc_html__( 'Something went wrong with Report ID', 'daily-attendance' ) );
+		if ($report_id === 0 || $report_id === false) {
+			error_log("Invalid report ID");
+			return new WP_Error('invalid_report', esc_html__('Something went wrong with Report ID', 'daily-attendance'));
 		}
 
-		$_month = pbda()->get_meta( '_month', $report_id );
+		$_month = get_post_meta($report_id, '_month', true);
+		error_log("Getting attendance for month: $_month");
 
-		foreach ( pbda()->get_meta( 'pbda_attendance', $report_id, array(), false ) as $item ) {
+		$attendance_meta = get_post_meta($report_id, 'pbda_attendance', false);
+		error_log("Raw attendance data: " . print_r($attendance_meta, true));
 
-			$this_user_id = isset( $item['user_id'] ) ? $item['user_id'] : '';
-			$this_date    = isset( $item['date'] ) ? $item['date'] : '';
-			$this_time    = isset( $item['current_time'] ) ? $item['current_time'] : '';
+		foreach ($attendance_meta as $item) {
+			$this_user_id = isset($item['user_id']) ? $item['user_id'] : '';
+			$this_date = isset($item['date']) ? $item['date'] : '';
+			$this_time = isset($item['current_time']) ? (int)$item['current_time'] : 0;
 
-			if ( empty( $this_user_id ) || $this_user_id === 0 || empty( $this_date ) || $this_date === 0 || $this_user_id != $user_id ) {
+			if (empty($this_user_id) || $this_user_id === 0 || empty($this_date) || $this_user_id != $user_id) {
 				continue;
 			}
 
-			$this_date  = explode( '-', $this_date );
-			$this_year  = isset( $this_date[0] ) ? $this_date[0] : '';
-			$this_month = isset( $this_date[1] ) ? $this_date[1] : '';
-			$this_day   = isset( $this_date[2] ) ? (int) $this_date[2] : '';
+			$this_date = explode('-', $this_date);
+			$this_year = isset($this_date[0]) ? $this_date[0] : '';
+			$this_month = isset($this_date[1]) ? $this_date[1] : '';
+			$this_day = isset($this_date[2]) ? (int)$this_date[2] : '';
 
-			if ( empty( $this_day ) || $this_day === 0 || $_month != sprintf( '%s%s', $this_year, $this_month ) ) {
+			if (empty($this_day) || $this_day === 0 || $_month != sprintf('%s%s', $this_year, $this_month)) {
 				continue;
 			}
 
-			$attendances[ $this_day ] = $this_time;
+			$attendances[$this_day] = [
+				'timestamp' => $this_time,
+				'date' => sprintf('%s-%s-%02d', $this_year, $this_month, $this_day),
+				'time' => pbda_format_time($this_time)
+			];
 		}
 
+		error_log("Processed attendance data: " . print_r($attendances, true));
 		return $attendances;
 	}
 }
@@ -154,7 +165,14 @@ if ( ! function_exists( 'pbda_insert_attendance' ) ) {
 			'report_id'    => $report_id,
 			'date'         => $current_time->format('Y-m-d'),
 			'current_time' => $current_time->getTimestamp(),
+			'timezone'     => $wp_timezone->getName() // Store timezone info
 		);
+
+		error_log("Inserting attendance: " . print_r([
+			'user_id' => $user_id,
+			'date' => $current_time->format('Y-m-d H:i:s T'),
+			'timestamp' => $current_time->getTimestamp()
+		], true));
 
 		$response = add_post_meta( $report_id, 'pbda_attendance', $args );
 
@@ -270,10 +288,129 @@ if ( ! function_exists( 'pbda' ) ) {
 }
 
 // Add a helper function to format time with timezone
-function pbda_format_time($timestamp) {
+function pbda_format_time($attendance_data) {
+    // Check if we're getting array or timestamp
+    if (is_array($attendance_data)) {
+        $timestamp = isset($attendance_data['timestamp']) ? $attendance_data['timestamp'] : 0;
+    } else {
+        $timestamp = (int)$attendance_data;
+    }
+
+    if (empty($timestamp)) {
+        return 'N/A';
+    }
+
+    // Get WordPress timezone
     $wp_timezone = wp_timezone();
-    $date = new DateTime();
-    $date->setTimestamp($timestamp);
-    $date->setTimezone($wp_timezone);
-    return $date->format('h:i A');
+    
+    try {
+        $date = new DateTime();
+        $date->setTimestamp($timestamp);
+        $date->setTimezone($wp_timezone);
+        error_log("Formatting time: Original timestamp: $timestamp, Formatted: " . $date->format('Y-m-d H:i:s T'));
+        return $date->format('h:i A');
+    } catch (Exception $e) {
+        error_log("Time formatting error: " . $e->getMessage());
+        return 'Invalid Time';
+    }
+}
+
+function pbda_send_attendance_report($user_id = false, $report_id = null) {
+    if (!$user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    error_log("Starting attendance report for user $user_id from report $report_id");
+
+    // Check SMTP status first
+    $smtp_status = EmailManager::get_smtp_status();
+    if (!$smtp_status['active']) {
+        return array(
+            'status' => 'error',
+            'message' => $smtp_status['message'],
+            'start_time' => current_time('Y-m-d H:i:s'),
+            'smtp_active' => false,
+            'attendance_data' => [],
+            'report_title' => '',
+            'user_id' => $user_id
+        );
+    }
+
+    error_log("Sending attendance report for user $user_id from report $report_id");
+    
+    $user = get_user_by('id', $user_id);
+    if (!$user) {
+        return array(
+            'status' => 'error',
+            'message' => "User not found: $user_id",
+            'start_time' => current_time('Y-m-d H:i:s')
+        );
+    }
+
+    // Get attendance data
+    $attendances = pbda_get_user_attendance($user_id, $report_id);
+    
+    if (is_wp_error($attendances)) {
+        error_log("Error getting attendance: " . $attendances->get_error_message());
+        return array(
+            'status' => 'error',
+            'message' => $attendances->get_error_message(),
+            'start_time' => current_time('Y-m-d H:i:s')
+        );
+    }
+
+    // Format attendance data for email
+    $attendance_data = array();
+    foreach ($attendances as $day => $data) {
+        $attendance_data[$data['date']] = array(
+            'timestamp' => $data['timestamp'],
+            'time' => $data['time'],
+            'day' => $day
+        );
+    }
+
+    error_log("Formatted attendance data: " . print_r($attendance_data, true));
+
+    return EmailManager::send_attendance_report($user_id, $attendance_data, $report_id);
+}
+
+function pbda_get_report_id_by_month($month) {
+    $reports = pbda_get_all_reports();
+    foreach ($reports as $report) {
+        if ($report['month'] === $month) {
+            return $report['id'];
+        }
+    }
+    return false;
+}
+
+function pbda_get_all_reports() {
+    $reports = get_posts(array(
+        'post_type' => 'da_reports',
+        'posts_per_page' => -1,
+        'orderby' => array(
+            'meta_value' => 'DESC',
+            'date' => 'DESC'
+        ),
+        'meta_key' => '_month',
+    ));
+
+    $formatted_reports = array();
+    foreach ($reports as $report) {
+        $month = get_post_meta($report->ID, '_month', true);
+        $date = DateTime::createFromFormat('Ym', $month);
+        if ($date) {
+            $formatted_reports[] = array(
+                'id' => $report->ID,
+                'title' => $report->post_title,
+                'month' => $month,
+                'formatted_date' => $date->format('F Y'),
+                'month_number' => $date->format('m'),
+                'year' => $date->format('Y'),
+                'created' => $report->post_date
+            );
+        }
+    }
+
+    return $formatted_reports;
 }
