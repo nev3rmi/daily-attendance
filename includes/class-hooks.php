@@ -702,27 +702,32 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			check_ajax_referer('pbda_send_report', 'nonce');
 			
 			if (!current_user_can('manage_options')) {
-				wp_send_json_error(__('Permission denied', 'daily-attendance'));
+				wp_send_json_error(['message' => __('Permission denied', 'daily-attendance')]);
+				return;
 			}
 
 			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 			$month = isset($_POST['month']) ? sanitize_text_field($_POST['month']) : date('Ym');
 			
-			// Get attendance data directly using month value
+			error_log("Processing send report request for user: $user_id, month: $month");
+			
+			// Get report ID
 			$report_id = pbda_get_report_id_by_month($month);
 			
 			if (!$report_id) {
-				wp_send_json_error(__('No attendance data found for this month', 'daily-attendance'));
+				wp_send_json_error([
+					'status' => 'error',
+					'message' => __('No attendance data found for this month', 'daily-attendance'),
+					'attendance_data' => [],
+					'start_time' => current_time('Y-m-d H:i:s'),
+					'smtp_active' => EmailManager::is_wp_mail_smtp_active(),
+					'report_title' => date('F Y', strtotime($month . '01'))
+				]);
 				return;
 			}
 
 			$result = pbda_send_attendance_report($user_id, $report_id);
-			
-			if (isset($result['status']) && $result['status'] === 'success') {
-				wp_send_json_success($result);
-			} else {
-				wp_send_json_error($result);
-			}
+			wp_send_json_success($result);
 		}
 	}
 

@@ -298,7 +298,8 @@ jQuery(document).ready(function($) {
             message: 'Sending email...',
             attendance_data: {},
             smtp_active: true,
-            report_title: $('#month-select option:selected').text()
+            report_title: $('#month-select option:selected').text(),
+            user_id: userId
         }, userId);
 
         $.ajax({
@@ -311,40 +312,44 @@ jQuery(document).ready(function($) {
                 month: month
             },
             success: function(response) {
+                console.log('Response:', response); // Debug log
+                
                 if (response.success) {
                     $status.html('✓ ' + response.data.message)
                            .addClass('status-success')
                            .removeClass('status-error');
-                    // Update the debug entry with full data
                     addDebugEntry(response.data, userId);
                 } else {
-                    $status.html('✕ ' + response.data)
+                    const errorData = {
+                        status: 'error',
+                        message: response.data.message || 'Unknown error occurred',
+                        start_time: new Date().toLocaleString(),
+                        attendance_data: response.data.attendance_data || {},
+                        smtp_active: response.data.smtp_active || false,
+                        report_title: response.data.report_title || $('#month-select option:selected').text(),
+                        user_id: userId
+                    };
+                    $status.html('✕ ' + errorData.message)
                            .addClass('status-error')
                            .removeClass('status-success');
-                    // Add error entry to debug log
-                    addDebugEntry({
-                        status: 'error',
-                        start_time: new Date().toLocaleString(),
-                        message: response.data,
-                        attendance_data: {},
-                        smtp_active: true,
-                        report_title: $('#month-select option:selected').text()
-                    }, userId);
+                    addDebugEntry(errorData, userId);
                 }
             },
             error: function(xhr, status, error) {
+                console.error('AJAX Error:', {xhr, status, error}); // Debug log
+                const errorData = {
+                    status: 'error',
+                    message: `Ajax Error: ${error}`,
+                    start_time: new Date().toLocaleString(),
+                    attendance_data: {},
+                    smtp_active: false,
+                    report_title: $('#month-select option:selected').text(),
+                    user_id: userId
+                };
                 $status.html('✕ Failed')
                        .addClass('status-error')
                        .removeClass('status-success');
-                // Add error entry to debug log
-                addDebugEntry({
-                    status: 'error',
-                    start_time: new Date().toLocaleString(),
-                    message: `Ajax Error: ${error}`,
-                    attendance_data: {},
-                    smtp_active: false,
-                    report_title: $('#month-select option:selected').text()
-                }, userId);
+                addDebugEntry(errorData, userId);
             }
         });
     }
