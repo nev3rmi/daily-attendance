@@ -4,6 +4,7 @@
 * Normalize CSS
 */
 
+/* Base Form Styles */
 .pbda-form {
     width: 320px;
 }
@@ -35,8 +36,7 @@
     color: #737373;
 }
 
-
-
+/* Button Styles */
 .pbda-button {
     display: inline-block;
     line-height: normal;
@@ -61,12 +61,7 @@
     box-shadow: none;
 }
 
-
-
-/**
- * Notices
- */
-
+/* Notice Styles */
 .pbda-notice {
     background: #00bcd43b;
     padding: 10px;
@@ -87,7 +82,7 @@
     background: #4caf503b;
 }
 
-/* Admin styles moved to frontend */
+/* Admin Report Styles */
 .post-php.post-type-da_reports .meta-box-sortables.ui-sortable.empty-container {
     border: none;
 }
@@ -185,4 +180,447 @@
 
 .pbda-report-created {
     color: #0bbff2;
+}
+
+/* Existing API Documentation Styles */
+.api-documentation {
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.api-section {
+    margin: 30px 0;
+    padding: 20px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9fa;
+}
+
+.api-endpoint {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border-radius: 4px;
+    border-left: 4px solid #2271b1;
+    position: relative;
+}
+
+.api-error {
+    margin: 15px 0;
+    padding: 15px;
+    background: #fff;
+    border-radius: 4px;
+    border-left: 4px solid #dc3545;
+}
+
+/* New Copy Button and Code Block Styles */
+.code-block {
+    position: relative;
+    margin: 15px 0;
+}
+
+.copy-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 5px 10px;
+    background: #2271b1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+    z-index: 10;
+}
+
+.copy-button:hover {
+    opacity: 1;
+    background: #135e96;
+}
+
+.copy-button:active {
+    transform: scale(0.95);
+}
+
+.copy-button.copied {
+    background: #4CAF50;
+}
+
+.copy-button.copied:after {
+    content: "Copied!";
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: #4CAF50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 5px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Enhanced Code Examples */
+.curl-example {
+    background: #272822;
+    color: #a6e22e !important;
+    padding: 15px 40px 15px 15px;
+    border-radius: 4px;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+}
+
+.curl-example:hover {
+    box-shadow: 0 0 0 2px rgba(166, 226, 46, 0.1);
+}
+
+.response-example {
+    background: #272822;
+    color: #66d9ef !important;
+    padding: 15px 40px 15px 15px;
+    border-radius: 4px;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+}
+
+.response-example:hover {
+    box-shadow: 0 0 0 2px rgba(102, 217, 239, 0.1);
+}
+
+/* Code Block & Copy Button Styles */
+.copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    background: #45a049;
+}
+
+.copy-btn.copied {
+    background: #45a049;
+}
+
+/* Code Examples */
+pre {
+    background: #272822;
+    color: #f8f8f2;
+    padding: 15px 40px 15px 15px;
+    border-radius: 4px;
+    overflow: auto;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.curl-example {
+    color: #a6e22e !important;
+}
+
+.response-example {
+    color: #66d9ef !important;
+}
+
+/* Documentation Headers */
+.api-documentation h3 {
+    color: #2271b1;
+    border-bottom: 2px solid #2271b1;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.api-documentation h4 {
+    color: #1d2327;
+    margin: 0 0 15px;
+}
+
+/* Auth Methods Section */
+.api-auth-methods {
+    margin-top: 15px;
+    padding: 15px;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes copySuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Syntax Highlighting */
+.string { color: #a6e22e; }
+.number { color: #ae81ff; }
+.boolean { color: #f92672; }
+.null { color: #fd971f; }
+.key { color: #66d9ef; }
+.comment { color: #75715e; font-style: italic; }
+
+/* API Documentation */
+.api-documentation {
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.api-section {
+    margin: 30px 0;
+    padding: 20px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.api-section h3 {
+    margin-top: 0;
+    color: #2271b1;
+    border-bottom: 2px solid #2271b1;
+    padding-bottom: 10px;
+}
+
+pre {
+    background: #272822;
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 4px;
+    overflow: auto;
+    font-family: monospace;
+}
+
+code {
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.language-bash {
+    color: #a6e22e;
+}
+
+h2 {
+    margin: 30px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2271b1;
+    color: #1d2327;
+}
+
+/* Enhanced Attendance Report Styles */
+.post-php.post-type-da_reports {
+    background: #f0f2f5;
+}
+
+.post-php.post-type-da_reports #poststuff {
+    padding-top: 20px;
+}
+
+.pbda-reports-wrap {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 20px;
+    padding: 25px;
+}
+
+.pbda-report-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px 25px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e5e9f0;
+}
+
+.pbda-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pbda-info .label {
+    color: #64748b;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.pbda-info .value {
+    color: #334155;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/* Enhanced Table Styles */
+.pbda-reports {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-top: 20px;
+    border: 1px solid #e5e9f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.pbda-reports thead tr {
+    background: #f1f5f9;
+}
+
+.pbda-reports th {
+    padding: 12px 15px;
+    font-weight: 600;
+    color: #475569;
+    text-align: center;
+    border-bottom: 2px solid #e5e9f0;
+}
+
+.pbda-reports td {
+    padding: 12px 15px;
+    border: 1px solid #e5e9f0;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.pbda-reports tr:hover {
+    background-color: #f8fafc;
+}
+
+.pbda-reports td.name {
+    text-align: left;
+    font-weight: 500;
+    color: #334155;
+    background: #f8fafc;
+    min-width: 180px;
+}
+
+.pbda-reports td.yes {
+    background-color: #dcfce7;
+    cursor: pointer;
+}
+
+.pbda-reports td.no {
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.pbda-reports td.yes:hover {
+    background-color: #bbf7d0;
+}
+
+.pbda-reports td.no:hover {
+    background-color: #f1f5f9;
+}
+
+.pbda-reports td.yes i {
+    color: #16a34a;
+    font-size: 16px;
+}
+
+/* Export Button Styles */
+.export-csv {
+    background: #2563eb;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.export-csv:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.export-csv:active {
+    transform: translateY(0);
+}
+
+.export-csv::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>');
+    background-size: contain;
+}
+
+/* Confirmation Dialog Styles */
+.pbda-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 300px;
+}
+
+.pbda-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 782px) {
+    .pbda-report-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .pbda-reports td.name {
+        min-width: 140px;
+    }
+    
+    .pbda-reports {
+        font-size: 14px;
+    }
 }
