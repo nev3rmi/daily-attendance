@@ -302,20 +302,44 @@ if ( ! function_exists( 'pbda_current_report_id' ) ) {
 
 
 if ( ! function_exists( 'pbda_get_days_header' ) ) {
-	function pbda_get_days_header( $num_days = 0 ) {
+	/**
+	 * Return days header html
+	 * 
+	 * @param int $num_days
+	 * @return string
+	 */
+	function pbda_get_days_header($num_days = 0) {
+		ob_start();
+		
+		for ($day = 0; $day <= $num_days; $day++) {
+			if ($day === 0) {
+				printf('<td class="blank"></td>');
+				continue;
+			}
+			printf('<th>%s</th>', $day);
+		}
+		
+		return ob_get_clean();
+	}
+}
+
+if ( ! function_exists( 'pbda' ) ) {
+	/**
+	 * Return global $pbda
+	 *
 	 * @return PBDA_Functions
 	 */
 	function pbda() {
 		global $pbda;
-		for ( $day = 0; $day <= $num_days; $day ++ ) {
-		if ( empty( $pbda ) ) {
-			$pbda = new PBDA_Functions();/td>' );
-		}	continue;
-			}
-		return $pbda;>%s</th>', $day );
-	}}
+		
+		if (empty($pbda)) {
+			$pbda = new PBDA_Functions();
+		}
+		
+		return $pbda;
+	}
 }
-		return ob_get_clean();
+
 // Add a helper function to format time with timezone
 function pbda_format_time($attendance_data) {
     // Check if we're getting array or timestamp
@@ -324,10 +348,10 @@ function pbda_format_time($attendance_data) {
     } else {
         $timestamp = (int)$attendance_data;
     }
-	 * @return PBDA_Functions
+
     if (empty($timestamp)) {
         return 'N/A';
-    }bal $pbda;
+    }
 
     // Get WordPress timezone
     $wp_timezone = wp_timezone();
@@ -337,157 +361,87 @@ function pbda_format_time($attendance_data) {
         $date->setTimestamp($timestamp);
         $date->setTimezone($wp_timezone);
         error_log("Formatting time: Original timestamp: $timestamp, Formatted: " . $date->format('Y-m-d H:i:s T'));
-        return $date->format('h:i A');e with timezone
-    } catch (Exception $e) {ttendance_data) {
+        return $date->format('h:i A');
+    } catch (Exception $e) {
         error_log("Time formatting error: " . $e->getMessage());
-        return 'Invalid Time';ata)) {
-    }   $timestamp = isset($attendance_data['timestamp']) ? $attendance_data['timestamp'] : 0;
-}   } else {
-        $timestamp = (int)$attendance_data;
+        return 'Invalid Time';
+    }
+}
+
 function pbda_send_attendance_report($user_id = false, $report_id = null) {
     if (!$user_id) {
         $user_id = get_current_user_id();
-    }   return 'N/A';
     }
     error_log("Starting attendance report for user $user_id from report $report_id");
-    // Get WordPress timezone
-    // Check SMTP status first();
+    // Check SMTP status first
     $smtp_status = EmailManager::get_smtp_status();
     if (!$smtp_status['active']) {
-        return array(ateTime();
-            'status' => 'error',estamp);
+        return array(
+            'status' => 'error',
             'message' => $smtp_status['message'],
-            'start_time' => current_time('Y-m-d H:i:s'),$timestamp, Formatted: " . $date->format('Y-m-d H:i:s T'));
-            'smtp_active' => false,');
+            'start_time' => current_time('Y-m-d H:i:s'),
+            'smtp_active' => false,
             'attendance_data' => [],
-            'report_title' => '',g error: " . $e->getMessage());
+            'report_title' => '',
             'user_id' => $user_id
         );
     }
 
     error_log("Sending attendance report for user $user_id from report $report_id");
-    if (!$user_id) {
-    $user = get_user_by('id', $user_id);;
+    $user = get_user_by('id', $user_id);
     if (!$user) {
         return array(
-            'status' => 'error',ce report for user $user_id from report $report_id");
+            'status' => 'error',
             'message' => "User not found: $user_id",
             'start_time' => current_time('Y-m-d H:i:s')
-        );status = EmailManager::get_smtp_status();
-    }f (!$smtp_status['active']) {
-        return array(
-    // Get attendance datarror',
+        );
+    }
+
+    // Get attendance data
     $attendances = pbda_get_user_attendance($user_id, $report_id);
-            'start_time' => current_time('Y-m-d H:i:s'),
     if (is_wp_error($attendances)) {
         error_log("Error getting attendance: " . $attendances->get_error_message());
-        return array(itle' => '',
-            'status' => 'error',d
+        return array(
+            'status' => 'error',
             'message' => $attendances->get_error_message(),
             'start_time' => current_time('Y-m-d H:i:s')
         );
-    }rror_log("Sending attendance report for user $user_id from report $report_id");
+    }
     
-    // Format attendance data for email;
+    // Format attendance data for email
     $attendance_data = array();
     foreach ($attendances as $day => $data) {
         $attendance_data[$data['date']] = array(
-            'timestamp' => $data['timestamp'],r_id",
-            'time' => $data['time'],time('Y-m-d H:i:s')
+            'timestamp' => $data['timestamp'],
+            'time' => $data['time'],
             'day' => $day
         );
     }
-    // Get attendance data
     error_log("Formatted attendance data: " . print_r($attendance_data, true));
     
     return EmailManager::send_attendance_report($user_id, $attendance_data, $report_id);
-}       error_log("Error getting attendance: " . $attendances->get_error_message());
-        return array(
+}
+
 function pbda_get_report_id_by_month($month) {
-    $reports = pbda_get_all_reports();>get_error_message(),
-    foreach ($reports as $report) {_time('Y-m-d H:i:s')
+    $reports = pbda_get_all_reports();
+    foreach ($reports as $report) {
         if ($report['month'] === $month) {
             return $report['id'];
         }
-    }/ Format attendance data for email
-    return false;ata = array();
-}   foreach ($attendances as $day => $data) {
-        $attendance_data[$data['date']] = array(
-function pbda_get_all_reports() {'timestamp'],
-    $reports = get_posts(array(me'],
+    }
+    return false;
+}
+
+function pbda_get_all_reports() {
+    $reports = get_posts(array(
         'post_type' => 'da_reports',
         'posts_per_page' => -1,
         'orderby' => array(
             'meta_value' => 'DESC',
-            'date' => 'DESC'endance data: " . print_r($attendance_data, true));
-        ),
-        'meta_key' => '_month',ttendance_report($user_id, $attendance_data, $report_id);
-    ));
-
-    $formatted_reports = array();nth($month) {
-    foreach ($reports as $report) {();
-        $month = get_post_meta($report->ID, '_month', true);
-        $date = DateTime::createFromFormat('Ym', $month);
-        if ($date) {report['id'];
-            $formatted_reports[] = array(
-                'id' => $report->ID,
-                'title' => $report->post_title,
-                'month' => $month,
-                'formatted_date' => $date->format('F Y'),
-                'month_number' => $date->format('m'),
-                'year' => $date->format('Y'),
-                'created' => $report->post_date
-            );_per_page' => -1,
-        }orderby' => array(
-    }       'meta_value' => 'DESC',
             'date' => 'DESC'
-    return $formatted_reports;
-}       'meta_key' => '_month',
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}    }        return $results;                }            }                }                    $results['months'][] = $month;                if (!in_array($month, $results['months'])) {                $results['cleaned']++;                wp_delete_post($report->ID, true);                // Delete duplicate reports            } else {                $results['preserved']++;                $processed_months[$month] = $report->ID;                // Keep the first report for each month            if (!isset($processed_months[$month])) {                        $month = get_post_meta($report->ID, '_month', true);        foreach ($reports as $report) {                $processed_months = array();        ));            'order'          => 'ASC',            'orderby'        => 'date',            'post_status'    => array('publish', 'draft', 'pending'),            'posts_per_page' => -1,            'post_type'      => 'da_reports',        $reports = get_posts(array(                );            'months' => array()            'preserved' => 0,            'cleaned' => 0,        $results = array(    function pbda_cleanup_duplicate_reports() {     */     * @return array Results of cleanup     *      * Cleanup duplicate attendance reports    /**if (!function_exists('pbda_cleanup_duplicate_reports')) {    ));
+        ),
+        'meta_key' => '_month',
+    ));
 
     $formatted_reports = array();
     foreach ($reports as $report) {
