@@ -127,6 +127,11 @@ class DailyAttendance {
         if (empty($secret)) {
             add_option('pbda_qr_secret', bin2hex(random_bytes(32)));
         }
+        
+        // Clean up any duplicate reports
+        if (function_exists('pbda_cleanup_duplicate_reports')) {
+            pbda_cleanup_duplicate_reports();
+        }
     }
 }
 
