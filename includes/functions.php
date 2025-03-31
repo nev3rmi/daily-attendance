@@ -452,9 +452,9 @@ function pbda_get_all_reports() {
         if ($date) {
             $formatted_reports[] = array(
                 'id' => $report->ID,
-                'title' => $report->post_title,
+                'title' => $report->post_title,  // Now using post_title directly
                 'month' => $month,
-                'formatted_date' => $date->format('F Y'),
+                'formatted_date' => $date->format('F Y'), // Keep this for backwards compatibility
                 'month_number' => $date->format('m'),
                 'year' => $date->format('Y'),
                 'created' => $report->post_date
