@@ -424,12 +424,37 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/submit')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Auth Required:</strong> No</p>
-                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
-        -H "Content-Type: application/json" \
-        -d '{
-        "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-        "hash": "<?php echo esc_attr($example_hash); ?>"
-    }'</code></pre>
+                <p><strong>Parameters:</strong></p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-json">{
+    "userName": "string",  // Optional: For login method
+    "passWord": "string",  // Optional: For login method
+    "hash": "string",      // Optional: For QR code method
+    "user_id": "integer"   // Optional: For QR code method
+}</code></pre>
+                </div>
+
+                <p><strong>Example Request:</strong></p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
+     -H "Content-Type: application/json" \
+     -d '{
+    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+    "hash": "<?php echo esc_attr($example_hash); ?>"
+}'</code></pre>
+                </div>
+
+                <p><strong>Success Response:</strong></p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-json">{
+    "version": "V1",
+    "success": true,
+    "content": "Attendance marked successfully"
+}</code></pre>
+                </div>
             </div>
 
             <!-- List Reports -->
@@ -438,8 +463,29 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/reports')); ?></code></p>
                 <p><strong>Method:</strong> GET</p>
                 <p><strong>Auth Required:</strong> Yes</p>
-                <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
-        -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
+
+                <p><strong>Example Request:</strong></p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
+                </div>
+
+                <p><strong>Success Response:</strong></p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-json">{
+    "success": true,
+    "data": [{
+        "id": integer,
+        "title": "March 2024",
+        "month": "202403",
+        "attendance": array,
+        "report_url": "string"
+    }],
+    "auth_method": "API Key|WordPress Admin"
+}</code></pre>
+                </div>
             </div>
 
             <!-- Send Report to All -->
@@ -453,14 +499,19 @@ class SettingsManager {
     "report_id": integer  // ID of the attendance report to send
 }</code></pre>
                 <p><strong>Example Request:</strong></p>
-                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
     "report_id": 123
 }'</code></pre>
+                </div>
                 <p><strong>Success Response:</strong></p>
-                <pre><code class="language-json">{
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-json">{
     "success": true,
     "data": {
         "report_id": 123,
@@ -474,6 +525,7 @@ class SettingsManager {
         }]
     }
 }</code></pre>
+                </div>
             </div>
 
             <!-- Export CSV -->
@@ -482,8 +534,11 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/export-csv/{report_id}')); ?></code></p>
                 <p><strong>Method:</strong> GET</p>
                 <p><strong>Auth Required:</strong> Yes</p>
-                <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
-        -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
+                </div>
             </div>
 
             <!-- Send Report -->
@@ -492,13 +547,16 @@ class SettingsManager {
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Auth Required:</strong> Yes</p>
-                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
-        -H "Content-Type: application/json" \
-        -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
-        -d '{
-            "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
-            "report_id": 123
-        }'</code></pre>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     -d '{
+    "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+    "report_id": 123
+}'</code></pre>
+                </div>
             </div>
         </div>
 
@@ -544,7 +602,62 @@ class SettingsManager {
             border-bottom: 2px solid #2271b1;
             color: #1d2327;
         }
+        .code-block {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background: #2271b1;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-btn.copied {
+            background: #46b450;
+        }
         </style>
+
+        <script>
+        function copyToClipboard(button) {
+            const pre = button.nextElementSibling;
+            const text = pre.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Show copied state
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    button.textContent = 'Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                        button.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    button.textContent = 'Error!';
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+        </script>
         <?php
     }
 
