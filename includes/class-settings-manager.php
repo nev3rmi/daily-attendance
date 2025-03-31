@@ -389,6 +389,99 @@ class SettingsManager {
     }
 
     private function render_api_documentation() {
+        // Remove old CSS file reference and use only the front CSS
+        wp_enqueue_style('pbda-front-style', PBDA_PLUGIN_URL . 'assets/front/css/style.css', array(), PBDA_VERSION);
+        
+        // Add copy functionality JavaScript
+        ?>
+        <script>
+        function copyToClipboard(element) {
+            const pre = element.closest('.api-endpoint').querySelector('pre');
+            const text = pre.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success state
+                element.textContent = 'Copied!';
+                element.classList.add('copied');
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    element.textContent = 'Copy';
+                    element.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    element.textContent = 'Copied!';
+                    element.classList.add('copied');
+                    setTimeout(() => {
+                        element.textContent = 'Copy';
+                        element.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    element.textContent = 'Error!';
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+        </script>
+
+        <style>
+        /* Preserve existing styles */
+        .api-documentation { /* ... */ }
+        .api-section { /* ... */ }
+        .api-endpoint { /* ... */ }
+        .api-error { /* ... */ }
+        pre { /* ... */ }
+        code { /* ... */ }
+        h3 { /* ... */ }
+        h4 { /* ... */ }
+        .api-auth-methods { /* ... */ }
+
+        /* Updated copy button styles */
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+            background: #45a049;
+        }
+
+        .copy-btn.copied {
+            background: #45a049;
+        }
+
+        /* Keep existing endpoint styles */
+        .api-endpoint {
+            position: relative;
+        }
+
+        .api-endpoint pre {
+            padding-right: 80px; /* Make room for copy button */
+            margin-bottom: 0;
+        }
+        </style>
+
+        <?php 
+        // Keep existing variables
         $example_user = reset(get_users(['fields' => ['ID', 'user_login']]));
         $example_hash = $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash';
         $api_key = get_option('pbda_api_key', '');
@@ -397,15 +490,11 @@ class SettingsManager {
             update_option('pbda_api_key', $api_key);
         }
 
-        // Add copy functionality before rendering documentation
+        // Add copy functionality
         ?>
         <script>
         function copyToClipboard(element) {
             const pre = element.closest('.code-block').querySelector('pre');
-            const text = pre.textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                // Show copied tooltip
-                element.classList.add('copied');
                 setTimeout(() => {
                     element.classList.remove('copied');
                 }, 2000);
@@ -592,7 +681,7 @@ class SettingsManager {
                 <div class="api-endpoint">
                     <h4>Submit Attendance</h4>
                     <div class="code-block">
-                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
                         <pre class="curl-example">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
@@ -606,7 +695,7 @@ class SettingsManager {
                 <div class="api-endpoint">
                     <h4>Get Reports</h4>
                     <div class="code-block">
-                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
                         <pre class="curl-example">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</pre>
                     </div>
@@ -616,7 +705,7 @@ class SettingsManager {
                 <div class="api-endpoint">
                     <h4>Send Report to All Users</h4>
                     <div class="code-block">
-                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
                         <pre class="curl-example">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
@@ -630,7 +719,7 @@ class SettingsManager {
                 <div class="api-endpoint">
                     <h4>Export CSV</h4>
                     <div class="code-block">
-                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
                         <pre class="curl-example">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      --output "attendance.csv"</pre>
