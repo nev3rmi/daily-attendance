@@ -783,16 +783,16 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				$('.pbda-reports td').click(function() {
 					if (!$(this).hasClass('name')) {
 						var $cell = $(this);
-						// Fix date calculation by getting the actual day number
 						var dayIndex = $cell.index();
-						var day = dayIndex.toString().padStart(2, '0'); // Ensure 2 digits
-						var date = '<?php echo date('Y-m'); ?>-' + day;
+						var actualDay = dayIndex;  // Since first column is name, index matches day
+						var formattedDay = actualDay.toString().padStart(2, '0');
+						var date = '<?php echo date('Y-m'); ?>-' + formattedDay;
 						var userId = $cell.closest('tr').data('user-id');
 						
 						if ($cell.hasClass('yes')) {
 							// Remove attendance
 							if (confirm('<?php esc_html_e('Remove attendance?', 'daily-attendance'); ?>')) {
-								 $.ajax({
+								$.ajax({
 									url: ajaxurl,
 									method: 'POST',
 									data: {
@@ -804,28 +804,52 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 									},
 									success: function(response) {
 										if (response.success) {
-											$cell.removeClass('yes').addClass('no')
+											$cell.removeClass('yes')
+												 .addClass('no')
 												 .removeClass('tt--top tt--info')
 												 .removeAttr('aria-label')
-												 .html('');
+												 .empty();
 										} else {
-											alert(response.data || 'Failed to remove attendance');
+											alert(response.data ? response.data.message : 'Failed to remove attendance');
 										}
+									},
+									error: function(xhr) {
+										alert('Server error occurred while removing attendance');
+										console.error('Remove attendance error:', xhr.responseText);
 									}
 								});
 							}
 						} else {
 							// Add attendance
 							if (confirm('<?php esc_html_e('Add attendance?', 'daily-attendance'); ?>')) {
-								$.post(ajaxurl, {
-									action: 'add_attendance',
-									nonce: '<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>',
-									user_id: userId,
-									date: date
-								}, function(response) {
-									if (response.success) {
-										$cell.removeClass('no').addClass('yes')
-											 .html('<i class="icofont-check-alt"></i>');
+								 $.ajax({
+									url: ajaxurl,
+									method: 'POST',
+									data: {
+										action: 'add_attendance',
+										nonce: '<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>',
+										user_id: userId,
+										date: date,
+										report_id: <?php echo esc_js($post->ID); ?>
+									},
+									success: function(response) {
+										if (response.success) {
+											var currentTime = new Date().toLocaleTimeString('en-US', { 
+												hour: 'numeric', 
+												minute: '2-digit',
+												hour12: true 
+											});
+											$cell.removeClass('no')
+												 .addClass('yes tt--top tt--info')
+												 .attr('aria-label', currentTime)
+												 .html('<i class="icofont-check-alt"></i>');
+										} else {
+											alert(response.data || 'Failed to add attendance');
+										}
+									},
+									error: function(xhr) {
+										alert('Server error occurred while adding attendance');
+										console.error('Add attendance error:', xhr.responseText);
 									}
 								});
 							}
@@ -1044,48 +1068,9 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function ajax_add_attendance(): void {
 			check_ajax_referer('pbda_ajax_nonce', 'nonce');
 			
-			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-			$date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
-			
 			if (!current_user_can('manage_options')) {
-				wp_send_json_error('Permission denied');
-			}
-
-			// Get WordPress timezone and create DateTime object
-			$wp_timezone = wp_timezone();
-			$date_obj = new DateTime($date . ' ' . current_time('H:i:s'), $wp_timezone);
-			
-			$args = array(
-				'user_id' => $user_id,
-				'report_id' => pbda_current_report_id(),
-				'date' => $date,
-				'current_time' => $date_obj->getTimestamp(),
-				'timezone' => $wp_timezone->getName()
-			);
-
-			error_log("Adding attendance: " . print_r([
-				'date' => $date,
-				'formatted_time' => $date_obj->format('Y-m-d H:i:s T'),
-				'timestamp' => $date_obj->getTimestamp()
-			], true));
-
-			$response = add_post_meta(pbda_current_report_id(), 'pbda_attendance', $args);
-			
-			if ($response) {
-				wp_send_json_success('Attendance added successfully');
-			} else {
-				wp_send_json_error('Failed to add attendance');
-			}
-		}
-
-		/**
-		 * AJAX handler to remove attendance
-		 */
-		public function ajax_remove_attendance(): void {
-			check_ajax_referer('pbda_ajax_nonce', 'nonce');
-			
-			if (!current_user_can('manage_options')) {
-				wp_send_json_error('Permission denied');
+				wp_send_json_error(['message' => 'Permission denied']);
+				return;
 			}
 
 			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
@@ -1096,18 +1081,74 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				$report_id = pbda_current_report_id();
 			}
 
-			// Get all attendance records
-			$attendances = get_post_meta($report_id, 'pbda_attendance', false);
+			// Get WordPress timezone and create DateTime object
+			$wp_timezone = wp_timezone();
+			$date_obj = new DateTime($date . ' ' . current_time('H:i:s'), $wp_timezone);
 			
-			foreach ($attendances as $attendance) {
-				if (isset($attendance['user_id']) && 
-					isset($attendance['date']) && 
-					$attendance['user_id'] == $user_id && 
-					$attendance['date'] == $date) {
+			$args = array(
+				'user_id' => $user_id,
+				'report_id' => $report_id,
+				'date' => $date,
+				'current_time' => $date_obj->getTimestamp(),
+				'timezone' => $wp_timezone->getName()
+			);
+
+			error_log("Adding attendance: " . print_r($args, true));
+			
+			$meta_id = add_post_meta($report_id, 'pbda_attendance', $args);
+			
+			if ($meta_id) {
+				wp_send_json_success([
+					'message' => 'Attendance added successfully',
+					'time' => $date_obj->format('h:i A')
+				]);
+			} else {
+				wp_send_json_error(['message' => 'Failed to add attendance']);
+			}
+		}
+
+		/**
+		 * AJAX handler to remove attendance
+		 */
+		public function ajax_remove_attendance(): void {
+			check_ajax_referer('pbda_ajax_nonce', 'nonce');
+			
+			if (!current_user_can('manage_options')) {
+				wp_send_json_error(['message' => 'Permission denied']);
+				return;
+			}
+
+			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+			$date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+
+			if (!$report_id) {
+				wp_send_json_error(['message' => 'Invalid report ID']);
+				return;
+			}
+
+			error_log("Removing attendance for user $user_id on date $date from report $report_id");
+
+			global $wpdb;
+			$meta_table = $wpdb->postmeta;
+			
+			// Get the exact attendance record
+			$attendance_meta = $wpdb->get_results($wpdb->prepare(
+				"SELECT * FROM $meta_table 
+				 WHERE post_id = %d 
+				 AND meta_key = 'pbda_attendance'",
+				$report_id
+			));
+
+			foreach ($attendance_meta as $meta) {
+				$value = maybe_unserialize($meta->meta_value);
+				if (is_array($value) && 
+					isset($value['user_id']) && 
+					isset($value['date']) && 
+					$value['user_id'] == $user_id && 
+					$value['date'] == $date) {
 					
-					// Found matching record, delete it
-					$deleted = delete_post_meta($report_id, 'pbda_attendance', $attendance);
-					if ($deleted) {
+					if (delete_metadata_by_mid('post', $meta->meta_id)) {
 						wp_send_json_success(['message' => 'Attendance removed successfully']);
 						return;
 					}
