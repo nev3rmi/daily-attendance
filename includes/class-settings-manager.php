@@ -442,9 +442,43 @@ class SettingsManager {
         -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
             </div>
 
+            <!-- Send Report to All -->
+            <div class="api-section">
+                <h3>3. Send Report to All Users</h3>
+                <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report-all')); ?></code></p>
+                <p><strong>Method:</strong> POST</p>
+                <p><strong>Auth Required:</strong> Yes (API Key only)</p>
+                <p><strong>Parameters:</strong></p>
+                <pre><code class="language-json">{
+    "report_id": integer  // ID of the attendance report to send
+}</code></pre>
+                <p><strong>Example Request:</strong></p>
+                <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     -d '{
+    "report_id": 123
+}'</code></pre>
+                <p><strong>Success Response:</strong></p>
+                <pre><code class="language-json">{
+    "success": true,
+    "data": {
+        "report_id": 123,
+        "report_title": "March 2024",
+        "total_users": 10,
+        "results": [{
+            "user_id": integer,
+            "email": "user@example.com",
+            "status": "success|error",
+            "message": "string"
+        }]
+    }
+}</code></pre>
+            </div>
+
             <!-- Export CSV -->
             <div class="api-section">
-                <h3>3. Export CSV</h3>
+                <h3>4. Export CSV</h3>
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/export-csv/{report_id}')); ?></code></p>
                 <p><strong>Method:</strong> GET</p>
                 <p><strong>Auth Required:</strong> Yes</p>
@@ -454,7 +488,7 @@ class SettingsManager {
 
             <!-- Send Report -->
             <div class="api-section">
-                <h3>4. Send Report</h3>
+                <h3>5. Send Report to User</h3>
                 <p><strong>Endpoint:</strong> <code><?php echo esc_html(rest_url('v1/qr-attendance/send-report')); ?></code></p>
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Auth Required:</strong> Yes</p>
