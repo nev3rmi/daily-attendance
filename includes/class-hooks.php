@@ -485,13 +485,15 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			register_rest_route($namespace, '/qr-attendance/export-csv/(?P<report_id>\d+)', array(
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
-				'permission_callback' => array($this, 'verify_api_key'),
+				'permission_callback' => function() {
+					return current_user_can('manage_options');
+				},
 				'args' => array(
 					'report_id' => array(
 						'required' => true,
 						'type' => 'integer',
 						'validate_callback' => function($param) {
-							return is_numeric($param);
+							return is_numeric($param) && $param > 0;
 						}
 					)
 				)
@@ -543,9 +545,35 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function api_export_csv(WP_REST_Request $request): void {
-			$report_id = $request->get_param('report_id');
-			require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
-			ExportManager::generate_csv($report_id);
+			try {
+				error_log('Starting CSV export...');
+				
+				// Get report ID
+				$report_id = $request->get_param('report_id');
+				error_log("Exporting CSV for report ID: $report_id");
+				
+				// Verify report exists
+				$report = get_post($report_id);
+				if (!$report || $report->post_type !== 'da_reports') {
+					wp_send_json_error(['message' => 'Invalid report ID']);
+					return;
+				}
+				
+				// Load export manager and generate CSV
+				require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+				
+				// Set headers for download
+				header('Content-Type: text/csv; charset=utf-8');
+				header('Content-Disposition: attachment; filename="attendance-report.csv"');
+				
+				// Generate and output CSV
+				ExportManager::generate_csv($report_id);
+				exit;
+				
+			} catch (Exception $e) {
+				error_log('CSV Export error: ' . $e->getMessage());
+				wp_send_json_error(['message' => 'Failed to generate CSV: ' . $e->getMessage()]);
+			}
 		}
 
 		public function api_send_report(WP_REST_Request $request): WP_REST_Response {

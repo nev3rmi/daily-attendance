@@ -57,7 +57,7 @@
 }
 
 /* Remove custom export button styles */
-.export-csv {
+/* .export-csv {
     display: inline;
     color: #0073aa;
     background: none;
@@ -72,7 +72,7 @@
     color: #00a0d2;
     background: none;
     transform: none;
-}
+} */
 
 /* Notice Styles */
 .pbda-notice {
