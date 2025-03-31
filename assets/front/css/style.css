@@ -526,11 +526,6 @@ pre.pbda-pre code.pbda-code {
     padding-left: 0;
 }
 
-.row-actions span:not(:last-child):after {
-    margin-left: 4px;
-    color: #ddd;
-}
-
 tr:hover .row-actions {
     visibility: visible;
 }
