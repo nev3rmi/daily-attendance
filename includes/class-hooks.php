@@ -243,27 +243,58 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			) );
 		}
 
-		public function verify_api_key(): bool {
+		private function verify_api_key_with_details(): array {
 			$api_key = '';
+			$source = 'none';
 			
-			// Check header first
-			$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
-			if (isset($headers['X-API-Key'])) {
-				$api_key = $headers['X-API-Key'];
+			// Check header with different possible formats
+			$headers = getallheaders();
+			$possible_header_names = ['X-API-Key', 'x-api-key', 'X-Api-Key', 'HTTP_X_API_KEY'];
+			
+			foreach ($possible_header_names as $header_name) {
+				if (isset($headers[$header_name])) {
+					$api_key = $headers[$header_name];
+					$source = 'header';
+					break;
+				}
 			}
 			
 			// Check GET parameter if not in header
 			if (empty($api_key) && isset($_GET['api_key'])) {
 				$api_key = sanitize_text_field($_GET['api_key']);
+				$source = 'query';
 			}
 			
 			// Check POST parameter if not in GET
 			if (empty($api_key) && isset($_POST['api_key'])) {
 				$api_key = sanitize_text_field($_POST['api_key']);
+				$source = 'post';
 			}
 			
 			$stored_key = get_option('pbda_api_key', '');
-			return !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
+			$keys_match = !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
+			
+			return [
+				'received_key' => $api_key,
+				'stored_key' => $stored_key,
+				'keys_match' => $keys_match,
+				'source' => $source
+			];
+		}
+
+		public function verify_api_key(): bool {
+			$result = $this->verify_api_key_with_details();
+			return $result['keys_match'];
+		}
+
+		public function api_verify_key_test(): WP_REST_Response {
+			$result = $this->verify_api_key_with_details();
+			
+			return new WP_REST_Response([
+				'success' => true,
+				'data' => $result,
+				'message' => $result['keys_match'] ? 'API keys match' : 'API keys do not match'
+			]);
 		}
 
 		public function register_api(): void {
@@ -303,21 +334,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
-					// First check API key
-					$api_key_valid = $this->verify_api_key();
-					error_log('API Key Authentication: ' . ($api_key_valid ? 'SUCCESS' : 'FAILED'));
+					$auth = $this->verify_api_key_with_details();
+					error_log('API Authentication: ' . ($auth['keys_match'] ? 'SUCCESS' : 'FAILED') . ' via ' . $auth['source']);
 					
-					if ($api_key_valid) {
+					if ($auth['keys_match']) {
 						return true;
 					}
 					
-					// Fallback to admin check if API key fails
+					// Fallback to admin check
 					$admin_access = current_user_can('manage_options');
 					error_log('Admin Authentication: ' . ($admin_access ? 'SUCCESS' : 'FAILED'));
-					error_log('Current User: ' . wp_get_current_user()->ID);
-					error_log('User Roles: ' . implode(', ', wp_get_current_user()->roles));
-					
-					return $api_key_valid || $admin_access;
+					return $admin_access;
 				}
 			));
 
@@ -381,73 +408,6 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'callback' => array($this, 'api_verify_key_test'),
 				'permission_callback' => '__return_true'
 			));
-		}
-
-		public function api_verify_key_test(): WP_REST_Response {
-			// Get API key from all possible sources
-			$api_key = '';
-			
-			// Check header with different possible formats
-			$headers = getallheaders();
-			error_log('Received headers: ' . print_r($headers, true)); // Debug headers
-			
-			$possible_header_names = ['X-API-Key', 'x-api-key', 'X-Api-Key', 'HTTP_X_API_KEY'];
-			foreach ($possible_header_names as $header_name) {
-				if (isset($headers[$header_name])) {
-					$api_key = $headers[$header_name];
-					error_log('Found API key in header: ' . $header_name);
-					break;
-				}
-			}
-			
-			// Check GET parameter if not in header
-			if (empty($api_key) && isset($_GET['api_key'])) {
-				$api_key = sanitize_text_field($_GET['api_key']);
-				error_log('Found API key in GET parameter');
-			}
-			
-			// Check POST parameter if not in GET
-			if (empty($api_key) && isset($_POST['api_key'])) {
-				$api_key = sanitize_text_field($_POST['api_key']);
-				error_log('Found API key in POST parameter');
-			}
-			
-			// Get stored key
-			$stored_key = get_option('pbda_api_key', '');
-			
-			// Debug logging
-			error_log('API Key Test - Headers: ' . print_r(getallheaders(), true));
-			error_log('API Key Test - Received Key: ' . $api_key);
-			error_log('API Key Test - Stored Key: ' . $stored_key);
-			
-			// Check if keys match
-			$keys_match = !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
-			
-			// Determine source
-			$source = 'none';
-			if (!empty($api_key)) {
-				foreach ($possible_header_names as $header_name) {
-					if (isset($headers[$header_name])) {
-						$source = 'header';
-						break;
-					}
-				}
-				if ($source === 'none') {
-					$source = isset($_GET['api_key']) ? 'query' : 'post';
-				}
-			}
-			
-			return new WP_REST_Response([
-				'success' => true,
-				'data' => [
-					'received_key' => $api_key,
-					'stored_key' => $stored_key,
-					'keys_match' => $keys_match,
-					'source' => $source,
-					'headers_debug' => $headers // Add this for debugging
-				],
-				'message' => $keys_match ? 'API keys match' : 'API keys do not match'
-			]);
 		}
 
 		public function regenerate_api_key(): void {
