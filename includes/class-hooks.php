@@ -783,20 +783,34 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				$('.pbda-reports td').click(function() {
 					if (!$(this).hasClass('name')) {
 						var $cell = $(this);
-						var date = '<?php echo date('Y-m'); ?>-' + $cell.closest('tr').find('td').index($cell);
+						// Fix date calculation by getting the actual day number
+						var dayIndex = $cell.index();
+						var day = dayIndex.toString().padStart(2, '0'); // Ensure 2 digits
+						var date = '<?php echo date('Y-m'); ?>-' + day;
 						var userId = $cell.closest('tr').data('user-id');
 						
 						if ($cell.hasClass('yes')) {
 							// Remove attendance
 							if (confirm('<?php esc_html_e('Remove attendance?', 'daily-attendance'); ?>')) {
-								$.post(ajaxurl, {
-									action: 'remove_attendance',
-									nonce: '<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>',
-									user_id: userId,
-									date: date
-								}, function(response) {
-									if (response.success) {
-										$cell.removeClass('yes').addClass('no').html('');
+								 $.ajax({
+									url: ajaxurl,
+									method: 'POST',
+									data: {
+										action: 'remove_attendance',
+										nonce: '<?php echo wp_create_nonce('pbda_ajax_nonce'); ?>',
+										user_id: userId,
+										date: date,
+										report_id: <?php echo esc_js($post->ID); ?>
+									},
+									success: function(response) {
+										if (response.success) {
+											$cell.removeClass('yes').addClass('no')
+												 .removeClass('tt--top tt--info')
+												 .removeAttr('aria-label')
+												 .html('');
+										} else {
+											alert(response.data || 'Failed to remove attendance');
+										}
 									}
 								});
 							}
@@ -1070,24 +1084,37 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function ajax_remove_attendance(): void {
 			check_ajax_referer('pbda_ajax_nonce', 'nonce');
 			
-			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-			$date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
-			
 			if (!current_user_can('manage_options')) {
 				wp_send_json_error('Permission denied');
 			}
 
-			$report_id = pbda_current_report_id();
+			$user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+			$date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+
+			if (!$report_id) {
+				$report_id = pbda_current_report_id();
+			}
+
+			// Get all attendance records
 			$attendances = get_post_meta($report_id, 'pbda_attendance', false);
 			
-			foreach ($attendances as $key => $attendance) {
-				if ($attendance['user_id'] == $user_id && $attendance['date'] == $date) {
-					delete_post_meta($report_id, 'pbda_attendance', $attendance);
-					wp_send_json_success('Attendance removed successfully');
+			foreach ($attendances as $attendance) {
+				if (isset($attendance['user_id']) && 
+					isset($attendance['date']) && 
+					$attendance['user_id'] == $user_id && 
+					$attendance['date'] == $date) {
+					
+					// Found matching record, delete it
+					$deleted = delete_post_meta($report_id, 'pbda_attendance', $attendance);
+					if ($deleted) {
+						wp_send_json_success(['message' => 'Attendance removed successfully']);
+						return;
+					}
 				}
 			}
 			
-			wp_send_json_error('Attendance not found');
+			wp_send_json_error(['message' => 'Attendance record not found']);
 		}
 
 		/**
