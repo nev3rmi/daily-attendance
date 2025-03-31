@@ -459,3 +459,45 @@ pre, .curl-example, .response-example {
         font-size: 14px;
     }
 }
+
+/* Admin Report Actions */
+.pbda-reports-wrap .row-actions {
+    display: flex;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.pbda-reports-wrap .row-actions span {
+    padding: 0;
+}
+
+.pbda-reports-wrap .row-actions span a,
+.pbda-reports-wrap .export-csv {
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.pbda-reports-wrap .row-actions span a:hover,
+.pbda-reports-wrap .export-csv:hover {
+    color: #00a0d2;
+}
+
+/* Hide old export button styles */
+.export-csv {
+    background: none;
+    padding: 0;
+    border: none;
+    transform: none;
+    font-weight: normal;
+    display: inline;
+}
+
+.export-csv:hover {
+    background: none;
+    transform: none;
+}
+
+.export-csv:active {
+    transform: none;
+}
