@@ -287,7 +287,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			return $result['keys_match'];
 		}
 
-		public function api_verify_key_test(): WP_REST_Response {
+		private function api_verify_key_test(): WP_REST_Response {
 			$result = $this->verify_api_key_with_details();
 			
 			return new WP_REST_Response([
@@ -402,12 +402,14 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			// Add regenerate API key endpoint
 			add_action('wp_ajax_regenerate_api_key', array($this, 'regenerate_api_key'));
 
-			// Add new test endpoint for API key verification
-			register_rest_route($namespace, '/qr-attendance/verify-api-key', array(
-				'methods' => 'GET',
-				'callback' => array($this, 'api_verify_key_test'),
-				'permission_callback' => '__return_true'
-			));
+			 // Public verify-api-key endpoint removed for security
+			 /* 
+			 register_rest_route($namespace, '/qr-attendance/verify-api-key', array(
+				 'methods' => 'GET',
+				 'callback' => array($this, 'api_verify_key_test'),
+				 'permission_callback' => '__return_true'
+			 ));
+			 */
 		}
 
 		public function regenerate_api_key(): void {
