@@ -131,21 +131,63 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		public function remove_row_actions(array $actions): array {
 			global $post;
 			if ($post->post_type === 'da_reports') {
-				$nonce = wp_create_nonce('wp_rest');
-				$export_url = rest_url("v1/export-csv/{$post->ID}") . "?_wpnonce={$nonce}";
+				$nonce = wp_create_nonce('pbda_ajax_nonce');
 				
 				$actions = array(
 					'view' => sprintf('<a href="%s">%s</a>', 
 						get_permalink($post->ID), 
 						esc_html__('View', 'daily-attendance')
 					),
-					'export' => sprintf('<a href="%s" class="export-csv" data-nonce="%s" data-report="%d">%s</a>',
-						esc_url($export_url),
+					'export' => sprintf(
+						'<a href="#" class="export-csv" data-nonce="%s" data-report="%d">%s</a>',
 						esc_attr($nonce),
 						$post->ID,
 						esc_html__('Export to CSV', 'daily-attendance')
 					)
 				);
+
+				// Add jQuery handler for export
+				add_action('admin_footer', function() {
+					?>
+					<script>
+					jQuery(document).ready(function($) {
+						$('.export-csv').on('click', function(e) {
+							e.preventDefault();
+							const reportId = $(this).data('report');
+							const nonce = $(this).data('nonce');
+							
+							// Create and submit form
+							const form = $('<form>', {
+								'method': 'POST',
+								'action': ajaxurl
+							});
+							
+							form.append($('<input>', {
+								'type': 'hidden',
+								'name': 'action',
+								'value': 'export_attendance_csv'
+							}));
+							
+							form.append($('<input>', {
+								'type': 'hidden',
+								'name': 'report_id',
+								'value': reportId
+							}));
+							
+							form.append($('<input>', {
+								'type': 'hidden',
+								'name': 'nonce',
+								'value': nonce
+							}));
+							
+							$('body').append(form);
+							form.submit();
+							form.remove();
+						});
+					});
+					</script>
+					<?php
+				});
 			}
 			return $actions;
 		}

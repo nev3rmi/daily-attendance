@@ -3,7 +3,7 @@ class ExportManager {
     public static function generate_csv($report_id) {
         try {
             // Clear any previous output
-            if (ob_get_level()) {
+            while (ob_get_level()) {
                 ob_end_clean();
             }
 
@@ -24,16 +24,18 @@ class ExportManager {
                 throw new Exception('Invalid date format');
             }
 
-            // Set filename
-            $filename = sprintf('attendance-report-%s.csv', $date->format('Y-m'));
+            // Set filename with report title
+            $filename = sanitize_file_name(sprintf(
+                'attendance-report-%s-%s.csv',
+                $report->post_title,
+                $date->format('Y-m')
+            ));
             
-            // Set proper headers for file download
-            header('Content-Type: text/csv');
+            // Set headers for download
+            header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Pragma: no-cache');
             header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: 0');
 
             // Start output buffering
             ob_start();
@@ -95,7 +97,7 @@ class ExportManager {
             
         } catch (Exception $e) {
             error_log('CSV Export Error: ' . $e->getMessage());
-            throw $e;
+            wp_die($e->getMessage());
         }
     }
 }
