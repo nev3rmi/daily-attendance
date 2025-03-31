@@ -4,7 +4,7 @@
 
 Submit attendance via API using either username/password or QR code scan.
 
-**Endpoint:** `/wp-json/v1/attendances/submit`  
+**Endpoint:** `/wp-json/v1/qr-attendances/submit`  
 **Method:** POST
 
 ### Authentication Methods
@@ -41,7 +41,7 @@ Submit attendance via API using either username/password or QR code scan.
 
 #### Using Username/Password:
 ```bash
-curl -X POST https://yoursite.com/wp-json/v1/attendances/submit \
+curl -X POST https://yoursite.com/wp-json/v1/qr-attendances/submit \
 -H "Content-Type: application/json" \
 -d '{
     "userName": "john_doe",
@@ -51,7 +51,7 @@ curl -X POST https://yoursite.com/wp-json/v1/attendances/submit \
 
 #### Using QR Code Data:
 ```bash
-curl -X POST https://yoursite.com/wp-json/v1/attendances/submit \
+curl -X POST https://yoursite.com/wp-json/v1/qr-attendances/submit \
 -H "Content-Type: application/json" \
 -d '{
     "user_id": 123,
@@ -91,7 +91,7 @@ curl -X POST https://yoursite.com/wp-json/v1/attendances/submit \
 ```javascript
 // QR Code scanning example
 function handleQRScan(qrData) {
-    fetch('/wp-json/v1/attendances/submit', {
+    fetch('/wp-json/v1/qr-attendances/submit', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

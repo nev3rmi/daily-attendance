@@ -53,7 +53,7 @@ $qr_data = $submission_url;
 
 <script>
 jQuery(document).ready(function($) {
-    const attendanceEndpoint = '<?php echo esc_url(rest_url('v1/attendances/submit')); ?>';
+    const attendanceEndpoint = '<?php echo esc_url(rest_url('v1/qr-attendances/submit')); ?>';
     let html5QrCode;
 
     // Initialize camera selection
