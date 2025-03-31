@@ -511,24 +511,6 @@ pre.pbda-pre code.pbda-code {
     color: #00a0d2;
 }
 
-/* Modify row actions to match WordPress style */
-.row-actions {
-    visibility: hidden;
-    font-size: 13px;
-    color: #666;
-}
-
-.row-actions span {
-    padding: 0 4px;
-}
-
-.row-actions span:first-child {
-    padding-left: 0;
-}
-
-tr:hover .row-actions {
-    visibility: visible;
-}
 
 /* Update the pre and code styles with specific classes */
 pre.pbda-pre, 
