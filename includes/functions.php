@@ -107,15 +107,17 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 				continue;
 			}
 
+			// Fix date parsing
 			$this_date = explode('-', $this_date);
 			$this_year = isset($this_date[0]) ? $this_date[0] : '';
 			$this_month = isset($this_date[1]) ? $this_date[1] : '';
 			$this_day = isset($this_date[2]) ? (int)$this_date[2] : '';
 
-			if (empty($this_day) || $this_day === 0 || $_month != sprintf('%s%s', $this_year, $this_month)) {
+			if (empty($this_day) || $this_day === 0) {
 				continue;
 			}
 
+			// Store with day as key
 			$attendances[$this_day] = [
 				'timestamp' => $this_time,
 				'date' => sprintf('%s-%s-%02d', $this_year, $this_month, $this_day),

@@ -784,9 +784,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					if (!$(this).hasClass('name')) {
 						var $cell = $(this);
 						var dayIndex = $cell.index();
-						var actualDay = dayIndex;  // Since first column is name, index matches day
-						var formattedDay = actualDay.toString().padStart(2, '0');
-						var date = '<?php echo date('Y-m'); ?>-' + formattedDay;
+						// Fix day calculation - first column is name
+						var day = (dayIndex > 0) ? dayIndex : 0;
+						var formattedDay = day.toString().padStart(2, '0');
+						
+						// Get the report's month and year from meta
+						var reportDate = '<?php 
+							$month = get_post_meta($post->ID, '_month', true);
+							echo date('Y-m', strtotime($month . '01')); 
+						?>';
+						
+						var date = reportDate + '-' + formattedDay;
 						var userId = $cell.closest('tr').data('user-id');
 						
 						if ($cell.hasClass('yes')) {
@@ -803,6 +811,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 										report_id: <?php echo esc_js($post->ID); ?>
 									},
 									success: function(response) {
+										console.log('Remove response:', response);
 										if (response.success) {
 											$cell.removeClass('yes')
 												 .addClass('no')
@@ -814,8 +823,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 										}
 									},
 									error: function(xhr) {
+										console.error('Remove error:', xhr.responseText);
 										alert('Server error occurred while removing attendance');
-										console.error('Remove attendance error:', xhr.responseText);
 									}
 								});
 							}
@@ -1078,7 +1087,17 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			$report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
 
 			if (!$report_id) {
-				$report_id = pbda_current_report_id();
+				wp_send_json_error(['message' => 'Invalid report ID']);
+				return;
+			}
+
+			// Validate the date belongs to this report's month
+			$report_month = get_post_meta($report_id, '_month', true);
+			$attendance_month = date('Ym', strtotime($date));
+			
+			if ($report_month !== $attendance_month) {
+				wp_send_json_error(['message' => 'Date does not match report month']);
+				return;
 			}
 
 			// Get WordPress timezone and create DateTime object
@@ -1127,34 +1146,31 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				return;
 			}
 
-			error_log("Removing attendance for user $user_id on date $date from report $report_id");
+			error_log("Removing attendance - User: $user_id, Date: $date, Report: $report_id");
 
 			global $wpdb;
-			$meta_table = $wpdb->postmeta;
 			
-			// Get the exact attendance record
-			$attendance_meta = $wpdb->get_results($wpdb->prepare(
-				"SELECT * FROM $meta_table 
-				 WHERE post_id = %d 
-				 AND meta_key = 'pbda_attendance'",
-				$report_id
-			));
-
-			foreach ($attendance_meta as $meta) {
-				$value = maybe_unserialize($meta->meta_value);
-				if (is_array($value) && 
-					isset($value['user_id']) && 
-					isset($value['date']) && 
-					$value['user_id'] == $user_id && 
-					$value['date'] == $date) {
+			// Get all attendance records for this report
+			$attendance_meta = get_post_meta($report_id, 'pbda_attendance', false);
+			
+			foreach ($attendance_meta as $key => $meta) {
+				if (isset($meta['user_id']) && 
+					isset($meta['date']) && 
+					$meta['user_id'] == $user_id && 
+					$meta['date'] == $date) {
 					
-					if (delete_metadata_by_mid('post', $meta->meta_id)) {
+					// Found matching record, delete it
+					$deleted = delete_post_meta($report_id, 'pbda_attendance', $meta);
+					
+					if ($deleted) {
+						error_log("Successfully removed attendance record");
 						wp_send_json_success(['message' => 'Attendance removed successfully']);
 						return;
 					}
 				}
 			}
 			
+			error_log("No matching attendance record found");
 			wp_send_json_error(['message' => 'Attendance record not found']);
 		}
 
