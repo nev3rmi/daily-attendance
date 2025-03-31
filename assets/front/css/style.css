@@ -527,7 +527,6 @@ pre.pbda-pre code.pbda-code {
 }
 
 .row-actions span:not(:last-child):after {
-    content: "|";
     margin-left: 4px;
     color: #ddd;
 }
