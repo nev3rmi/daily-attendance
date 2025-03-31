@@ -427,7 +427,7 @@ class SettingsManager {
                 <p><strong>Parameters:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-json">{
+                    <pre class="pbda-pre"><code class="pbda-code language-json">{
     "userName": "string",  // Optional: For login method
     "passWord": "string",  // Optional: For login method
     "hash": "string",      // Optional: For QR code method
@@ -438,7 +438,7 @@ class SettingsManager {
                 <p><strong>Example Request:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
+                    <pre class="pbda-pre"><code class="pbda-code language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
      -H "Content-Type: application/json" \
      -d '{
     "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
@@ -449,7 +449,7 @@ class SettingsManager {
                 <p><strong>Success Response:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-json">{
+                    <pre class="pbda-pre"><code class="pbda-code language-json">{
     "version": "V1",
     "success": true,
     "content": "Attendance marked successfully"
@@ -467,14 +467,14 @@ class SettingsManager {
                 <p><strong>Example Request:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
+                    <pre class="pbda-pre"><code class="pbda-code language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
                 </div>
 
                 <p><strong>Success Response:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-json">{
+                    <pre class="pbda-pre"><code class="pbda-code language-json">{
     "success": true,
     "data": [{
         "id": integer,
@@ -495,13 +495,13 @@ class SettingsManager {
                 <p><strong>Method:</strong> POST</p>
                 <p><strong>Auth Required:</strong> Yes (API Key only)</p>
                 <p><strong>Parameters:</strong></p>
-                <pre><code class="language-json">{
+                <pre class="pbda-pre"><code class="pbda-code language-json">{
     "report_id": integer  // ID of the attendance report to send
 }</code></pre>
                 <p><strong>Example Request:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
+                    <pre class="pbda-pre"><code class="pbda-code language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{
@@ -511,7 +511,7 @@ class SettingsManager {
                 <p><strong>Success Response:</strong></p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-json">{
+                    <pre class="pbda-pre"><code class="pbda-code language-json">{
     "success": true,
     "data": {
         "report_id": 123,
@@ -536,7 +536,7 @@ class SettingsManager {
                 <p><strong>Auth Required:</strong> Yes</p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
+                    <pre class="pbda-pre"><code class="pbda-code language-bash">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</code></pre>
                 </div>
             </div>
@@ -549,7 +549,7 @@ class SettingsManager {
                 <p><strong>Auth Required:</strong> Yes</p>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                    <pre><code class="language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
+                    <pre class="pbda-pre"><code class="pbda-code language-bash">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report')); ?>" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
      -d '{

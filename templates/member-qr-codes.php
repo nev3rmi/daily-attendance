@@ -33,7 +33,7 @@ $current_month = date('Y-m');
                         '<option value="%s" data-report="%d">%s</option>', 
                         esc_attr($report['month']),
                         $report['id'],
-                        esc_html($report['formatted_date'])
+                        esc_html($report['title'])  // Changed from formatted_date to title
                     );
                 }
                 ?>

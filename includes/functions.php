@@ -107,15 +107,17 @@ if ( ! function_exists( 'pbda_get_user_attendance' ) ) {
 				continue;
 			}
 
+			// Fix date parsing
 			$this_date = explode('-', $this_date);
 			$this_year = isset($this_date[0]) ? $this_date[0] : '';
 			$this_month = isset($this_date[1]) ? $this_date[1] : '';
 			$this_day = isset($this_date[2]) ? (int)$this_date[2] : '';
 
-			if (empty($this_day) || $this_day === 0 || $_month != sprintf('%s%s', $this_year, $this_month)) {
+			if (empty($this_day) || $this_day === 0) {
 				continue;
 			}
 
+			// Store with day as key
 			$attendances[$this_day] = [
 				'timestamp' => $this_time,
 				'date' => sprintf('%s-%s-%02d', $this_year, $this_month, $this_day),
@@ -231,44 +233,97 @@ if ( ! function_exists( 'pbda_current_report_id' ) ) {
 	 * @return mixed|void
 	 */
 	function pbda_current_report_id() {
+		global $wpdb;
+		
+		// Get current year and month
+		$current_month = date('Ym', current_time('timestamp'));
+		
+		// Use direct SQL query for better locking
+		$existing_report = $wpdb->get_var($wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} p 
+			INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+			WHERE p.post_type = 'da_reports' 
+			AND p.post_status IN ('publish', 'draft', 'pending')
+			AND pm.meta_key = '_month' 
+			AND pm.meta_value = %s 
+			LIMIT 1",
+			$current_month
+		));
 
-		$da_reports = get_posts( array(
-			'post_type'      => 'da_reports',
-			'posts_per_page' => 1,
-			'post_status'    => 'publish',
-			'fields'         => 'ids',
-			'meta_query'     => array(
-				array(
-					'key'     => '_month',
-					'value'   => date( 'Ym', current_time( 'timestamp' ) ),
-					'compare' => '=',
-				),
-			),
-		) );
+		if ($existing_report) {
+			return (int)$existing_report;
+		}
 
-		return apply_filters( 'pbda_current_report_id', reset( $da_reports ) );
+		// Use WordPress transients to prevent race conditions
+		$lock_key = 'creating_report_' . $current_month;
+		if (get_transient($lock_key)) {
+			// Wait for a moment and check again
+			sleep(1);
+			return pbda_current_report_id();
+		}
+
+		// Set a temporary lock
+		set_transient($lock_key, true, 30);
+
+		try {
+			// Check one more time before creating
+			$double_check = $wpdb->get_var($wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} p 
+				INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+				WHERE p.post_type = 'da_reports' 
+				AND p.post_status IN ('publish', 'draft', 'pending')
+				AND pm.meta_key = '_month' 
+				AND pm.meta_value = %s 
+				LIMIT 1",
+				$current_month
+			));
+
+			if ($double_check) {
+				delete_transient($lock_key);
+				return (int)$double_check;
+			}
+
+			// Create new report
+			$report_title = date('F Y', strtotime($current_month . '01'));
+			$report_id = wp_insert_post([
+				'post_title'  => $report_title,
+				'post_type'   => 'da_reports',
+				'post_status' => 'publish',
+			], true);
+
+			if (!is_wp_error($report_id)) {
+				update_post_meta($report_id, '_month', $current_month);
+			}
+
+			return $report_id;
+		} finally {
+			delete_transient($lock_key);
+		}
 	}
 }
 
 
 if ( ! function_exists( 'pbda_get_days_header' ) ) {
-	function pbda_get_days_header( $num_days = 0 ) {
-
-
+	/**
+	 * Return days header html
+	 * 
+	 * @param int $num_days
+	 * @return string
+	 */
+	function pbda_get_days_header($num_days = 0) {
 		ob_start();
-
-		for ( $day = 0; $day <= $num_days; $day ++ ) {
-			if ( $day === 0 ) {
-				printf( '<td class="blank"></td>' );
+		
+		for ($day = 0; $day <= $num_days; $day++) {
+			if ($day === 0) {
+				printf('<td class="blank"></td>');
 				continue;
 			}
-			printf( '<th>%s</th>', $day );
+			printf('<th>%s</th>', $day);
 		}
-
+		
 		return ob_get_clean();
 	}
 }
-
 
 if ( ! function_exists( 'pbda' ) ) {
 	/**
@@ -278,11 +333,11 @@ if ( ! function_exists( 'pbda' ) ) {
 	 */
 	function pbda() {
 		global $pbda;
-
-		if ( empty( $pbda ) ) {
+		
+		if (empty($pbda)) {
 			$pbda = new PBDA_Functions();
 		}
-
+		
 		return $pbda;
 	}
 }
@@ -319,9 +374,7 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
     if (!$user_id) {
         $user_id = get_current_user_id();
     }
-
     error_log("Starting attendance report for user $user_id from report $report_id");
-
     // Check SMTP status first
     $smtp_status = EmailManager::get_smtp_status();
     if (!$smtp_status['active']) {
@@ -337,7 +390,6 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
     }
 
     error_log("Sending attendance report for user $user_id from report $report_id");
-    
     $user = get_user_by('id', $user_id);
     if (!$user) {
         return array(
@@ -349,7 +401,6 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
 
     // Get attendance data
     $attendances = pbda_get_user_attendance($user_id, $report_id);
-    
     if (is_wp_error($attendances)) {
         error_log("Error getting attendance: " . $attendances->get_error_message());
         return array(
@@ -358,7 +409,7 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
             'start_time' => current_time('Y-m-d H:i:s')
         );
     }
-
+    
     // Format attendance data for email
     $attendance_data = array();
     foreach ($attendances as $day => $data) {
@@ -368,9 +419,8 @@ function pbda_send_attendance_report($user_id = false, $report_id = null) {
             'day' => $day
         );
     }
-
     error_log("Formatted attendance data: " . print_r($attendance_data, true));
-
+    
     return EmailManager::send_attendance_report($user_id, $attendance_data, $report_id);
 }
 
@@ -402,9 +452,9 @@ function pbda_get_all_reports() {
         if ($date) {
             $formatted_reports[] = array(
                 'id' => $report->ID,
-                'title' => $report->post_title,
+                'title' => $report->post_title,  // Now using post_title directly
                 'month' => $month,
-                'formatted_date' => $date->format('F Y'),
+                'formatted_date' => $date->format('F Y'), // Keep this for backwards compatibility
                 'month_number' => $date->format('m'),
                 'year' => $date->format('Y'),
                 'created' => $report->post_date
@@ -413,4 +463,48 @@ function pbda_get_all_reports() {
     }
 
     return $formatted_reports;
+}
+
+if (!function_exists('pbda_cleanup_duplicate_reports')) {
+    function pbda_cleanup_duplicate_reports() {
+        global $wpdb;
+        
+        $results = ['cleaned' => 0, 'preserved' => 0];
+        
+        // Get all months that have reports
+        $months = $wpdb->get_col(
+            "SELECT DISTINCT pm.meta_value 
+            FROM {$wpdb->postmeta} pm 
+            INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id 
+            WHERE p.post_type = 'da_reports' 
+            AND pm.meta_key = '_month'"
+        );
+        
+        foreach ($months as $month) {
+            // Get all reports for this month, ordered by creation date
+            $reports = $wpdb->get_results($wpdb->prepare(
+                "SELECT p.ID 
+                FROM {$wpdb->posts} p 
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+                WHERE p.post_type = 'da_reports' 
+                AND pm.meta_key = '_month' 
+                AND pm.meta_value = %s 
+                ORDER BY p.post_date ASC",
+                $month
+            ));
+            
+            if (count($reports) > 1) {
+                // Keep the first report, delete others
+                $keep = array_shift($reports);
+                $results['preserved']++;
+                
+                foreach ($reports as $report) {
+                    wp_delete_post($report->ID, true);
+                    $results['cleaned']++;
+                }
+            }
+        }
+        
+        return $results;
+    }
 }
