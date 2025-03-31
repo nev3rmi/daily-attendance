@@ -259,29 +259,54 @@
     animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Code Examples */
+/* Remove generic pre/code styles */
 pre, .curl-example, .response-example {
+    /* Remove these styles as they'll be replaced by classes */
+}
+
+/* Code Block Styles */
+pre.pbda-pre, 
+.pbda-code-block {
     background: #272822;
     color: #f8f8f2;
     padding: 15px 40px 15px 15px;
     border-radius: 4px;
     overflow: auto;
     margin: 10px 0;
-    font-family: monospace;
+    font-family: Monaco, Consolas, 'Andale Mono', 'DejaVu Sans Mono', monospace;
     font-size: 14px;
     line-height: 1.4;
+    position: relative;
 }
 
-.curl-example { color: #a6e22e !important; }
-.response-example { color: #66d9ef !important; }
+code.pbda-code {
+    font-family: Monaco, Consolas, 'Andale Mono', 'DejaVu Sans Mono', monospace;
+    background: rgba(0, 0, 0, 0.07);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #333;
+}
 
-/* Syntax Highlighting */
-.string { color: #a6e22e; }
-.number { color: #ae81ff; }
-.boolean { color: #f92672; }
-.null { color: #fd971f; }
-.key { color: #66d9ef; }
-.comment { color: #75715e; font-style: italic; }
+/* Code inside pre should not have background */
+pre.pbda-pre code.pbda-code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    display: block;
+}
+
+/* Language specific styles */
+.pbda-code.language-bash { color: #a6e22e; }
+.pbda-code.language-json { color: #66d9ef; }
+
+/* Syntax highlighting */
+.pbda-code .string { color: #a6e22e; }
+.pbda-code .number { color: #ae81ff; }
+.pbda-code .boolean { color: #f92672; }
+.pbda-code .null { color: #fd971f; }
+.pbda-code .key { color: #66d9ef; }
+.pbda-code .comment { color: #75715e; font-style: italic; }
 
 /* QR Code Styles */
 .pbda-qr-heading {
@@ -510,3 +535,49 @@ pre, .curl-example, .response-example {
 tr:hover .row-actions {
     visibility: visible;
 }
+
+/* Update the pre and code styles with specific classes */
+pre.pbda-pre, 
+.pbda-code-block {
+    background: #272822;
+    color: #f8f8f2;
+    padding: 15px 40px 15px 15px;
+    border-radius: 4px;
+    overflow: auto;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+}
+
+code.pbda-code {
+    font-family: Monaco, Consolas, 'Andale Mono', 'DejaVu Sans Mono', monospace;
+    background: rgba(0, 0, 0, 0.07);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+pre.pbda-pre code.pbda-code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    display: block;
+}
+
+.pbda-curl-example { 
+    color: #a6e22e !important; 
+}
+.pbda-response-example { 
+    color: #66d9ef !important; 
+}
+
+/* Syntax highlighting for code blocks */
+.pbda-code .string { color: #a6e22e; }
+.pbda-code .number { color: #ae81ff; }
+.pbda-code .boolean { color: #f92672; }
+.pbda-code .null { color: #fd971f; }
+.pbda-code .key { color: #66d9ef; }
+.pbda-code .comment { color: #75715e; font-style: italic; }
