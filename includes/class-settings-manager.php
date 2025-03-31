@@ -389,6 +389,9 @@ class SettingsManager {
     }
 
     private function render_api_documentation() {
+        // Enqueue just the front CSS
+        wp_enqueue_style('pbda-front-style', PBDA_PLUGIN_URL . 'assets/front/css/style.css', array(), PBDA_VERSION);
+        
         // Keep existing variable setup
         $example_user = reset(get_users(['fields' => ['ID', 'user_login']]));
         $example_hash = $example_user ? hash_hmac('sha256', $example_user->ID, get_option('pbda_qr_secret')) : 'generated_hash';
