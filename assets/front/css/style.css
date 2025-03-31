@@ -37,7 +37,7 @@
 }
 
 /* Button Styles */
-.pbda-button, .export-csv {
+.pbda-button {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -56,17 +56,22 @@
     background: #1d94ca;
 }
 
+/* Remove custom export button styles */
 .export-csv {
-    background: #2563eb;
+    display: inline;
+    color: #0073aa;
+    background: none;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    font-weight: normal;
+    text-decoration: none;
 }
 
 .export-csv:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
-}
-
-.export-csv:active {
-    transform: translateY(0);
+    color: #00a0d2;
+    background: none;
+    transform: none;
 }
 
 /* Notice Styles */
@@ -471,33 +476,37 @@ pre, .curl-example, .response-example {
     padding: 0;
 }
 
-.pbda-reports-wrap .row-actions span a,
-.pbda-reports-wrap .export-csv {
+.pbda-reports-wrap .row-actions span a {
     color: #0073aa;
     text-decoration: none;
     font-size: 13px;
 }
 
-.pbda-reports-wrap .row-actions span a:hover,
-.pbda-reports-wrap .export-csv:hover {
+.pbda-reports-wrap .row-actions span a:hover {
     color: #00a0d2;
 }
 
-/* Hide old export button styles */
-.export-csv {
-    background: none;
-    padding: 0;
-    border: none;
-    transform: none;
-    font-weight: normal;
-    display: inline;
+/* Modify row actions to match WordPress style */
+.row-actions {
+    visibility: hidden;
+    font-size: 13px;
+    color: #666;
 }
 
-.export-csv:hover {
-    background: none;
-    transform: none;
+.row-actions span {
+    padding: 0 4px;
 }
 
-.export-csv:active {
-    transform: none;
+.row-actions span:first-child {
+    padding-left: 0;
+}
+
+.row-actions span:not(:last-child):after {
+    content: "|";
+    margin-left: 4px;
+    color: #ddd;
+}
+
+tr:hover .row-actions {
+    visibility: visible;
 }
