@@ -303,11 +303,21 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
-					$can_access = current_user_can('manage_options');
-					error_log('Reports API Auth Check: ' . ($can_access ? 'SUCCESS' : 'FAILED'));
+					// First check API key
+					$api_key_valid = $this->verify_api_key();
+					error_log('API Key Authentication: ' . ($api_key_valid ? 'SUCCESS' : 'FAILED'));
+					
+					if ($api_key_valid) {
+						return true;
+					}
+					
+					// Fallback to admin check if API key fails
+					$admin_access = current_user_can('manage_options');
+					error_log('Admin Authentication: ' . ($admin_access ? 'SUCCESS' : 'FAILED'));
 					error_log('Current User: ' . wp_get_current_user()->ID);
 					error_log('User Roles: ' . implode(', ', wp_get_current_user()->roles));
-					return $can_access;
+					
+					return $api_key_valid || $admin_access;
 				}
 			));
 
@@ -407,20 +417,26 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 		public function api_get_reports(): WP_REST_Response {
 			try {
-				error_log('Fetching reports with authentication');
+				// Log authentication method used
+				$auth_method = $this->verify_api_key() ? 'API Key' : 'WordPress Admin';
+				error_log('Fetching reports using auth method: ' . $auth_method);
+				
 				$reports = pbda_get_all_reports();
 				
 				if (empty($reports)) {
+					error_log('No reports found');
 					return new WP_REST_Response([
 						'success' => true,
-							'message' => 'No reports found',
+						'message' => 'No reports found',
 						'data' => []
 					]);
 				}
 
+				error_log('Successfully fetched ' . count($reports) . ' reports');
 				return new WP_REST_Response([
 					'success' => true,
-					'data' => $reports
+					'data' => $reports,
+					'auth_method' => $auth_method
 				]);
 
 			} catch (Exception $e) {
