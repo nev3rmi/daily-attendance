@@ -384,12 +384,31 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function api_verify_key_test(): WP_REST_Response {
-			// Get API key from request
+			// Get API key from all possible sources
+			$api_key = '';
+			
+			// Check header first
 			$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
-			$api_key = isset($headers['X-API-Key']) ? $headers['X-API-Key'] : '';
+			if (isset($headers['X-API-Key'])) {
+				$api_key = $headers['X-API-Key'];
+			}
+			
+			// Check GET parameter if not in header
+			if (empty($api_key) && isset($_GET['api_key'])) {
+				$api_key = sanitize_text_field($_GET['api_key']);
+			}
+			
+			// Check POST parameter if not in GET
+			if (empty($api_key) && isset($_POST['api_key'])) {
+				$api_key = sanitize_text_field($_POST['api_key']);
+			}
 			
 			// Get stored key
 			$stored_key = get_option('pbda_api_key', '');
+			
+			// Debug logging
+			error_log('API Key Test - Received Key: ' . $api_key);
+			error_log('API Key Test - Stored Key: ' . $stored_key);
 			
 			// Check if keys match
 			$keys_match = !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
@@ -399,7 +418,11 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'data' => [
 					'received_key' => $api_key,
 					'stored_key' => $stored_key,
-					'keys_match' => $keys_match
+					'keys_match' => $keys_match,
+					'source' => !empty($api_key) ? (
+						isset($headers['X-API-Key']) ? 'header' : 
+						(isset($_GET['api_key']) ? 'query' : 'post')
+					) : 'none'
 				],
 				'message' => $keys_match ? 'API keys match' : 'API keys do not match'
 			]);
