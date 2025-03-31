@@ -374,6 +374,35 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			// Add regenerate API key endpoint
 			add_action('wp_ajax_regenerate_api_key', array($this, 'regenerate_api_key'));
+
+			// Add new test endpoint for API key verification
+			register_rest_route($namespace, '/qr-attendance/verify-api-key', array(
+				'methods' => 'GET',
+				'callback' => array($this, 'api_verify_key_test'),
+				'permission_callback' => '__return_true'
+			));
+		}
+
+		public function api_verify_key_test(): WP_REST_Response {
+			// Get API key from request
+			$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
+			$api_key = isset($headers['X-API-Key']) ? $headers['X-API-Key'] : '';
+			
+			// Get stored key
+			$stored_key = get_option('pbda_api_key', '');
+			
+			// Check if keys match
+			$keys_match = !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
+			
+			return new WP_REST_Response([
+				'success' => true,
+				'data' => [
+					'received_key' => $api_key,
+					'stored_key' => $stored_key,
+					'keys_match' => $keys_match
+				],
+				'message' => $keys_match ? 'API keys match' : 'API keys do not match'
+			]);
 		}
 
 		public function regenerate_api_key(): void {
