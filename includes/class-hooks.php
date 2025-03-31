@@ -486,7 +486,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'methods' => 'GET',
 				'callback' => array($this, 'api_export_csv'),
 				'permission_callback' => function() {
-					return current_user_can('manage_options');
+					return current_user_can('manage_options') || $this->verify_api_key();
 				},
 				'args' => array(
 					'report_id' => array(
@@ -544,35 +544,50 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			return current_user_can('manage_options');
 		}
 
-		public function api_export_csv(WP_REST_Request $request): void {
+		public function api_export_csv(WP_REST_Request $request): WP_REST_Response {
 			try {
-				error_log('Starting CSV export...');
+				error_log('Starting CSV export via REST API...');
 				
-				// Get report ID
 				$report_id = $request->get_param('report_id');
 				error_log("Exporting CSV for report ID: $report_id");
 				
 				// Verify report exists
 				$report = get_post($report_id);
 				if (!$report || $report->post_type !== 'da_reports') {
-					wp_send_json_error(['message' => 'Invalid report ID']);
-					return;
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'Invalid report ID'
+					], 404);
 				}
 				
-				// Load export manager and generate CSV
+				// Load export manager
 				require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+
+				// Set headers for CSV download
+				if (!headers_sent()) {
+					header('Content-Type: text/csv; charset=utf-8');
+					header('Content-Disposition: attachment; filename="attendance-report-' . $report_id . '.csv"');
+					header('Pragma: no-cache');
+					header('Expires: 0');
+				}
 				
-				// Set headers for download
-				header('Content-Type: text/csv; charset=utf-8');
-				header('Content-Disposition: attachment; filename="attendance-report.csv"');
-				
-				// Generate and output CSV
+				// Generate CSV content
+				ob_start();
 				ExportManager::generate_csv($report_id);
-				exit;
+				$csv_content = ob_get_clean();
+				
+				// Return CSV content with proper headers
+				return new WP_REST_Response($csv_content, 200, [
+					'Content-Type' => 'text/csv; charset=utf-8',
+					'Content-Disposition' => 'attachment; filename="attendance-report-' . $report_id . '.csv"'
+				]);
 				
 			} catch (Exception $e) {
 				error_log('CSV Export error: ' . $e->getMessage());
-				wp_send_json_error(['message' => 'Failed to generate CSV: ' . $e->getMessage()]);
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Failed to generate CSV: ' . $e->getMessage()
+				], 500);
 			}
 		}
 

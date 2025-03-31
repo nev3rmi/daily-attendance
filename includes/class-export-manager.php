@@ -18,27 +18,18 @@ class ExportManager {
             if (!$date) {
                 throw new Exception('Invalid date format');
             }
-            
-            $filename = sprintf('attendance-report-%s.csv', $date->format('Y-m'));
-            
-            // Set headers for CSV download
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
-            header('Cache-Control: no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
-            header('Expires: 0');
-            
-            // Create output stream
-            $output = fopen('php://output', 'w');
-            if ($output === false) {
-                throw new Exception('Failed to create output stream');
-            }
-            
+
             // Get all users
             $users = get_users(['fields' => ['ID', 'display_name', 'user_email']]);
             
             // Get number of days in month
             $num_days = cal_days_in_month(CAL_GREGORIAN, $date->format('m'), $date->format('Y'));
+            
+            // Create CSV output
+            $output = fopen('php://output', 'w');
+            if ($output === false) {
+                throw new Exception('Failed to create output stream');
+            }
             
             // Write header row
             $header = ['Name', 'Email'];
@@ -64,16 +55,15 @@ class ExportManager {
                     }
                 }
                 
-                // Add total days
                 $row[] = $total_days;
                 fputcsv($output, $row);
             }
             
             fclose($output);
-            exit;
+            
         } catch (Exception $e) {
             error_log('CSV Export Error: ' . $e->getMessage());
-            wp_die('Error generating CSV: ' . esc_html($e->getMessage()));
+            throw $e;
         }
     }
 }
