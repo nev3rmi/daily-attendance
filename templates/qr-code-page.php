@@ -29,7 +29,7 @@ $qr_data = $submission_url;
 ?>
 <div class="pbda-qr-container">
     <div class="pbda-qr-left">
-        <h2><?php esc_html_e('Scan a QR Code', 'daily-attendance'); ?></h2>
+        <h2><?php esc_html_e('Your QR Code', 'daily-attendance'); ?></h2>
         
         <!-- Add camera selection dropdown -->
         <div class="camera-select-wrapper">
@@ -44,7 +44,7 @@ $qr_data = $submission_url;
         <p class="qr-instructions"><?php esc_html_e('Point your camera at a QR code to mark attendance.', 'daily-attendance'); ?></p>
     </div>
     <div class="pbda-qr-right">
-        <h2><?php esc_html_e('Your Old QR Code', 'daily-attendance'); ?></h2>
+        <h2><?php esc_html_e('Scan QR Code', 'daily-attendance'); ?></h2>
         <div id="qrcode"></div>
         <p class="qr-date"><?php echo esc_html(date('jS M, Y')); ?></p>
         <p class="qr-instructions"><?php esc_html_e('Please scan this QR code using your mobile device', 'daily-attendance'); ?></p>
