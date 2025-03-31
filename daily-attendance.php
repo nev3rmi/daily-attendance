@@ -91,13 +91,14 @@ class DailyAttendance {
 
     public function render_report_page(): void {
         $num_days = date('t'); // Get number of days in current month
+        $current_report = get_post(pbda_current_report_id());
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             <div class="pbda-report-header">
                 <div class="pbda-info">
-                    <span class="label"><?php esc_html_e('Report Month', 'daily-attendance'); ?></span>
-                    <span class="value"><?php echo date('F, Y'); ?></span>
+                    <span class="label"><?php esc_html_e('Report Title', 'daily-attendance'); ?></span>
+                    <span class="value"><?php echo esc_html($current_report->post_title); ?></span>
                 </div>
                 <div class="pbda-info">
                     <span class="label"><?php esc_html_e('Total Users', 'daily-attendance'); ?></span>

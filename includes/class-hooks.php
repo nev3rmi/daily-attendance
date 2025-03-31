@@ -807,8 +807,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
                 <div class="pbda-report-info">
 
                     <div class="pbda-info">
-                        <span class="label"><?php esc_html_e( 'Report Month', 'daily-attendance' ); ?></span>
-                        <span class="value"><?php echo date( 'F, Y' ); ?></span>
+                        <span class="label"><?php esc_html_e( 'Report Title', 'daily-attendance' ); ?></span>
+                        <span class="value"><?php echo esc_html($post->post_title); ?></span>
                     </div>
 
                     <div class="pbda-info">
