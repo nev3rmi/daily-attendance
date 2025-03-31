@@ -460,13 +460,15 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				}
 			));
 
-			// Public test endpoint for reports (no auth)
-			register_rest_route($namespace, '/qr-attendance/reports-public', array(
-				'methods' => 'GET',
-				'callback' => array($this, 'api_get_reports_public'),
-				'permission_callback' => '__return_true'
-			));
-		
+			 // Commented out public endpoint for security reasons
+			 /*
+			 register_rest_route($namespace, '/qr-attendance/reports-public', array(
+				 'methods' => 'GET',
+				 'callback' => array($this, 'api_get_reports_public'),
+				 'permission_callback' => '__return_true'
+			 ));
+			 */
+
 			register_rest_route($namespace, '/qr-attendance/send-report-all', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report_all'),
