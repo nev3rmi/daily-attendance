@@ -544,49 +544,18 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			return current_user_can('manage_options');
 		}
 
-		public function api_export_csv(WP_REST_Request $request): WP_REST_Response {
+		public function api_export_csv(WP_REST_Request $request) {
 			try {
-				error_log('Starting CSV export via REST API...');
-				
-				$report_id = $request->get_param('report_id');
-				error_log("Exporting CSV for report ID: $report_id");
-				
-				// Verify report exists
-				$report = get_post($report_id);
-				if (!$report || $report->post_type !== 'da_reports') {
-					return new WP_REST_Response([
-						'success' => false,
-						'message' => 'Invalid report ID'
-					], 404);
-				}
-				
-				// Load export manager
-				require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
-
-				// Set headers for CSV download
 				if (!headers_sent()) {
-					header('Content-Type: text/csv; charset=utf-8');
-					header('Content-Disposition: attachment; filename="attendance-report-' . $report_id . '.csv"');
-					header('Pragma: no-cache');
-					header('Expires: 0');
+					$report_id = $request->get_param('report_id');
+					require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+					ExportManager::generate_csv($report_id);
 				}
-				
-				// Generate CSV content
-				ob_start();
-				ExportManager::generate_csv($report_id);
-				$csv_content = ob_get_clean();
-				
-				// Return CSV content with proper headers
-				return new WP_REST_Response($csv_content, 200, [
-					'Content-Type' => 'text/csv; charset=utf-8',
-					'Content-Disposition' => 'attachment; filename="attendance-report-' . $report_id . '.csv"'
-				]);
-				
 			} catch (Exception $e) {
 				error_log('CSV Export error: ' . $e->getMessage());
 				return new WP_REST_Response([
 					'success' => false,
-					'message' => 'Failed to generate CSV: ' . $e->getMessage()
+					'message' => $e->getMessage()
 				], 500);
 			}
 		}
@@ -1349,8 +1318,10 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				error_log("Exporting CSV for report ID: $report_id");
 				
 				// Generate CSV
-				require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
-				ExportManager::generate_csv($report_id);
+				if (!headers_sent()) {
+					require_once PBDA_PLUGIN_DIR . 'includes/class-export-manager.php';
+					ExportManager::generate_csv($report_id);
+				}
 				
 				// ExportManager handles the exit
 			} catch (Exception $e) {

@@ -2,6 +2,11 @@
 class ExportManager {
     public static function generate_csv($report_id) {
         try {
+            // Clear any previous output
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
             error_log("Starting CSV generation for report ID: $report_id");
             
             $report = get_post($report_id);
@@ -22,12 +27,16 @@ class ExportManager {
             // Set filename
             $filename = sprintf('attendance-report-%s.csv', $date->format('Y-m'));
             
-            // Set headers for forced download
-            header('Content-Type: application/octet-stream');
+            // Set proper headers for file download
+            header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
-            header('Cache-Control: no-cache, must-revalidate');
-            header('Pragma: public');
             header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: 0');
+
+            // Start output buffering
+            ob_start();
 
             // Get all users
             $users = get_users(['fields' => ['ID', 'display_name', 'user_email']]);
@@ -71,10 +80,16 @@ class ExportManager {
             
             fclose($output);
 
-            // Make sure to flush output buffer and exit
-            if (ob_get_level()) {
-                ob_end_clean();
-            }
+            // Get the content from buffer and clear it
+            $content = ob_get_clean();
+            
+            // Update content length
+            header('Content-Length: ' . strlen($content));
+            
+            // Output the content
+            echo $content;
+            
+            // Make sure everything is sent and stop execution
             flush();
             exit();
             
