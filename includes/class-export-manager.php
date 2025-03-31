@@ -19,6 +19,16 @@ class ExportManager {
                 throw new Exception('Invalid date format');
             }
 
+            // Set filename
+            $filename = sprintf('attendance-report-%s.csv', $date->format('Y-m'));
+            
+            // Set headers for forced download
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: public');
+            header('Expires: 0');
+
             // Get all users
             $users = get_users(['fields' => ['ID', 'display_name', 'user_email']]);
             
@@ -60,6 +70,13 @@ class ExportManager {
             }
             
             fclose($output);
+
+            // Make sure to flush output buffer and exit
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            flush();
+            exit();
             
         } catch (Exception $e) {
             error_log('CSV Export Error: ' . $e->getMessage());
