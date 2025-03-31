@@ -297,6 +297,67 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			]);
 		}
 
+		/**
+		 * API Endpoints Documentation
+		 * 
+		 * Authentication Methods:
+		 * 1. API Key: Send via X-API-Key header, query parameter, or POST parameter
+		 * 2. Admin Access: WordPress admin with manage_options capability
+		 * 
+		 * Public Endpoints (No Auth Required):
+		 * 1. POST /v1/qr-attendance/submit
+		 *    Description: Submit attendance for a user
+		 *    Auth: None
+		 *    Params: 
+		 *      - userName/passWord (for login method)
+		 *      - hash/user_id (for QR code method)
+		 *    Returns: Success/failure status with message
+		 * 
+		 * 2. GET /v1/qr-attendance/reports-public
+		 *    Description: Get limited report info without authentication
+		 *    Auth: None
+		 *    Returns: Basic report data (id, title, month, formatted_date)
+		 * 
+		 * Protected Endpoints (API Key or Admin Required):
+		 * 1. GET /v1/qr-attendance/reports
+		 *    Description: Get full attendance reports
+		 *    Auth: API Key or Admin
+		 *    Returns: Complete report data including attendance records
+		 * 
+		 * API Key Only Endpoints:
+		 * 1. POST /v1/qr-attendance/send-report-all
+		 *    Description: Send report to all users with attendance
+		 *    Auth: API Key
+		 *    Params: report_id (integer)
+		 *    Returns: Results for each user email sent
+		 * 
+		 * 2. GET /v1/qr-attendance/export-csv/{report_id}
+		 *    Description: Export report as CSV file
+		 *    Auth: API Key
+		 *    Params: report_id (in URL)
+		 *    Returns: CSV file download
+		 * 
+		 * 3. POST /v1/qr-attendance/send-report
+		 *    Description: Send report to specific user
+		 *    Auth: API Key
+		 *    Params: 
+		 *      - user_id (integer)
+		 *      - report_id (integer)
+		 *    Returns: Email sending result
+		 * 
+		 * Response Format:
+		 * {
+		 *   "success": boolean,
+		 *   "data": mixed,
+		 *   "message": string (optional)
+		 * }
+		 * 
+		 * Error Codes:
+		 * - 400: Bad Request (invalid parameters)
+		 * - 401: Unauthorized (invalid API key)
+		 * - 404: Not Found
+		 * - 500: Server Error
+		 */
 		public function register_api(): void {
 			// Add plugin prefix to namespace
 			$namespace = 'v1';
@@ -514,35 +575,63 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 		
 		public function api_send_report_all(WP_REST_Request $request): WP_REST_Response {
-			$report_id = $request->get_param('report_id');
+			try {
+				$report_id = $request->get_param('report_id');
+				
+				// Verify report exists
+				$report = get_post($report_id);
+				if (!$report || $report->post_type !== 'da_reports') {
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'Invalid report ID'
+					], 400);
+				}
 			
-			// Verify report exists
-			$report = get_post($report_id);
-			if (!$report || $report->post_type !== 'da_reports') {
+				// Get all attendance records for this report
+				$attendances = get_post_meta($report_id, 'pbda_attendance', false);
+				if (empty($attendances)) {
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'No attendance records found for this report'
+					], 404);
+				}
+
+				// Extract unique user IDs from attendance records
+				$user_ids = array_unique(array_map(function($attendance) {
+					return $attendance['user_id'];
+				}, $attendances));
+
+				$results = [];
+				foreach ($user_ids as $user_id) {
+					$user = get_user_by('id', $user_id);
+					if (!$user) continue;
+
+					$result = pbda_send_attendance_report($user_id, $report_id);
+					$results[] = [
+						'user_id' => $user_id,
+						'email' => $user->user_email,
+						'status' => $result['status'],
+						'message' => $result['message']
+					];
+				}
+			
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => [
+						'report_id' => $report_id,
+						'report_title' => $report->post_title,
+						'total_users' => count($user_ids),
+						'results' => $results
+					]
+				]);
+
+			} catch (Exception $e) {
+				error_log('Send Report All Error: ' . $e->getMessage());
 				return new WP_REST_Response([
 					'success' => false,
-					'message' => 'Invalid report ID'
-				], 400);
+					'message' => 'Error sending reports: ' . $e->getMessage()
+				], 500);
 			}
-		
-			// Get all users
-			$users = get_users(['fields' => ['ID']]);
-			$results = [];
-		
-			// Send report to each user
-			foreach ($users as $user) {
-				$result = pbda_send_attendance_report($user->ID, $report_id);
-				$results[] = [
-					'user_id' => $user->ID,
-					'status' => $result['status'],
-					'message' => $result['message']
-				];
-			}
-		
-			return new WP_REST_Response([
-				'success' => true,
-				'data' => $results
-			]);
 		}
 
 		/**
