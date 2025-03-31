@@ -440,3 +440,187 @@ h2 {
     border-bottom: 2px solid #2271b1;
     color: #1d2327;
 }
+
+/* Enhanced Attendance Report Styles */
+.post-php.post-type-da_reports {
+    background: #f0f2f5;
+}
+
+.post-php.post-type-da_reports #poststuff {
+    padding-top: 20px;
+}
+
+.pbda-reports-wrap {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 20px;
+    padding: 25px;
+}
+
+.pbda-report-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px 25px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e5e9f0;
+}
+
+.pbda-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pbda-info .label {
+    color: #64748b;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.pbda-info .value {
+    color: #334155;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/* Enhanced Table Styles */
+.pbda-reports {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-top: 20px;
+    border: 1px solid #e5e9f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.pbda-reports thead tr {
+    background: #f1f5f9;
+}
+
+.pbda-reports th {
+    padding: 12px 15px;
+    font-weight: 600;
+    color: #475569;
+    text-align: center;
+    border-bottom: 2px solid #e5e9f0;
+}
+
+.pbda-reports td {
+    padding: 12px 15px;
+    border: 1px solid #e5e9f0;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.pbda-reports tr:hover {
+    background-color: #f8fafc;
+}
+
+.pbda-reports td.name {
+    text-align: left;
+    font-weight: 500;
+    color: #334155;
+    background: #f8fafc;
+    min-width: 180px;
+}
+
+.pbda-reports td.yes {
+    background-color: #dcfce7;
+    cursor: pointer;
+}
+
+.pbda-reports td.no {
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.pbda-reports td.yes:hover {
+    background-color: #bbf7d0;
+}
+
+.pbda-reports td.no:hover {
+    background-color: #f1f5f9;
+}
+
+.pbda-reports td.yes i {
+    color: #16a34a;
+    font-size: 16px;
+}
+
+/* Export Button Styles */
+.export-csv {
+    background: #2563eb;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.export-csv:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.export-csv:active {
+    transform: translateY(0);
+}
+
+.export-csv::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>');
+    background-size: contain;
+}
+
+/* Confirmation Dialog Styles */
+.pbda-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 300px;
+}
+
+.pbda-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 782px) {
+    .pbda-report-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .pbda-reports td.name {
+        min-width: 140px;
+    }
+    
+    .pbda-reports {
+        font-size: 14px;
+    }
+}
