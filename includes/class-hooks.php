@@ -303,8 +303,19 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
-					return current_user_can('manage_options');
+					$can_access = current_user_can('manage_options');
+					error_log('Reports API Auth Check: ' . ($can_access ? 'SUCCESS' : 'FAILED'));
+					error_log('Current User: ' . wp_get_current_user()->ID);
+					error_log('User Roles: ' . implode(', ', wp_get_current_user()->roles));
+					return $can_access;
 				}
+			));
+
+			// Public test endpoint for reports (no auth)
+			register_rest_route($namespace, '/qr-attendance/reports-public', array(
+				'methods' => 'GET',
+				'callback' => array($this, 'api_get_reports_public'),
+				'permission_callback' => '__return_true'
 			));
 		
 			register_rest_route($namespace, '/qr-attendance/send-report-all', array(
@@ -395,11 +406,59 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function api_get_reports(): WP_REST_Response {
-			$reports = pbda_get_all_reports();
-			return new WP_REST_Response([
-				'success' => true,
-				'data' => $reports
-			]);
+			try {
+				error_log('Fetching reports with authentication');
+				$reports = pbda_get_all_reports();
+				
+				if (empty($reports)) {
+					return new WP_REST_Response([
+						'success' => true,
+							'message' => 'No reports found',
+						'data' => []
+					]);
+				}
+
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => $reports
+				]);
+
+			} catch (Exception $e) {
+				error_log('Reports API Error: ' . $e->getMessage());
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Error fetching reports: ' . $e->getMessage()
+				], 500);
+			}
+		}
+
+		public function api_get_reports_public(): WP_REST_Response {
+			try {
+				error_log('Fetching reports without authentication');
+				$reports = pbda_get_all_reports();
+				
+				// Sanitize sensitive data for public endpoint
+				$public_reports = array_map(function($report) {
+					return [
+						'id' => $report['id'],
+						'title' => $report['title'],
+						'month' => $report['month'],
+						'formatted_date' => $report['formatted_date']
+					];
+				}, $reports);
+
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => $public_reports
+				]);
+
+			} catch (Exception $e) {
+				error_log('Public Reports API Error: ' . $e->getMessage());
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Error fetching reports'
+				], 500);
+			}
 		}
 		
 		public function api_send_report_all(WP_REST_Request $request): WP_REST_Response {
