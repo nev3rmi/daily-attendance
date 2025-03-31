@@ -396,7 +396,65 @@ class SettingsManager {
             $api_key = wp_generate_password(32, false);
             update_option('pbda_api_key', $api_key);
         }
+
+        // Add copy functionality before rendering documentation
         ?>
+        <script>
+        function copyToClipboard(element) {
+            const pre = element.closest('.code-block').querySelector('pre');
+            const text = pre.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                // Show copied tooltip
+                element.classList.add('copied');
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        </script>
+
+        <style>
+        .code-block {
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 10px;
+            background: #2271b1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .copy-button:hover {
+            opacity: 1;
+        }
+        .copy-button.copied:after {
+            content: "Copied!";
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: #4CAF50;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .curl-example {
+            background: #272822;
+            color: #a6e22e !important;
+        }
+        .response-example {
+            background: #272822;
+            color: #66d9ef !important;
+        }
+        </style>
+
         <div class="api-documentation">
             <h2>API Documentation</h2>
             
@@ -526,6 +584,60 @@ class SettingsManager {
                 </div>
             </div>
 
+            <!-- Example Requests -->
+            <div class="api-section">
+                <h3>Example Requests</h3>
+
+                <!-- Submit Attendance -->
+                <div class="api-endpoint">
+                    <h4>Submit Attendance</h4>
+                    <div class="code-block">
+                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <pre class="curl-example">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/submit')); ?>" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "user_id": <?php echo $example_user ? $example_user->ID : 1; ?>,
+  "hash": "<?php echo esc_attr($example_hash); ?>"
+}'</pre>
+                    </div>
+                </div>
+
+                <!-- Get Reports -->
+                <div class="api-endpoint">
+                    <h4>Get Reports</h4>
+                    <div class="code-block">
+                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <pre class="curl-example">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/reports')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>"</pre>
+                    </div>
+                </div>
+
+                <!-- Send Report All -->
+                <div class="api-endpoint">
+                    <h4>Send Report to All Users</h4>
+                    <div class="code-block">
+                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <pre class="curl-example">curl -X POST "<?php echo esc_url(rest_url('v1/qr-attendance/send-report-all')); ?>" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     -d '{
+    "report_id": 123
+}'</pre>
+                    </div>
+                </div>
+
+                <!-- Export CSV -->
+                <div class="api-endpoint">
+                    <h4>Export CSV</h4>
+                    <div class="code-block">
+                        <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+                        <pre class="curl-example">curl -X GET "<?php echo esc_url(rest_url('v1/qr-attendance/export-csv/123')); ?>" \
+     -H "X-API-Key: <?php echo esc_attr($api_key); ?>" \
+     --output "attendance.csv"</pre>
+                    </div>
+                </div>
+            </div>
+
             <!-- Error Responses -->
             <div class="api-section">
                 <h3>Common Error Responses</h3>
@@ -563,64 +675,6 @@ class SettingsManager {
                 </div>
             </div>
         </div>
-
-        <style>
-        .api-documentation {
-            padding: 30px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .api-section {
-            margin: 30px 0;
-            padding: 20px;
-            border: 1px solid #e5e5e5;
-            border-radius: 4px;
-            background: #f9f9f9;
-        }
-        .api-endpoint {
-            margin: 20px 0;
-            padding: 15px;
-            background: #fff;
-            border-radius: 4px;
-            border-left: 4px solid #2271b1;
-        }
-        .api-error {
-            margin: 15px 0;
-            padding: 15px;
-            background: #fff;
-            border-radius: 4px;
-            border-left: 4px solid #dc3545;
-        }
-        pre {
-            background: #272822;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 4px;
-            overflow: auto;
-            margin: 10px 0;
-        }
-        code {
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        h3 {
-            color: #2271b1;
-            border-bottom: 2px solid #2271b1;
-            padding-bottom: 10px;
-        }
-        h4 {
-            color: #1d2327;
-            margin: 0 0 15px;
-        }
-        .api-auth-methods {
-            margin-top: 15px;
-            padding: 15px;
-            background: #fff;
-            border-radius: 4px;
-        }
-        </style>
         <?php
     }
 
