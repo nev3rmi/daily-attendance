@@ -243,28 +243,171 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 			) );
 		}
 
-		public function verify_api_key(): bool {
+		private function verify_api_key_with_details(): array {
 			$api_key = '';
+			$source = 'none';
 			
-			// Check header first
-			$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
-			if (isset($headers['X-API-Key'])) {
-				$api_key = $headers['X-API-Key'];
+			// Check header with different possible formats
+			$headers = getallheaders();
+			$possible_header_names = ['X-API-Key', 'x-api-key', 'X-Api-Key', 'HTTP_X_API_KEY'];
+			
+			foreach ($possible_header_names as $header_name) {
+				if (isset($headers[$header_name])) {
+					$api_key = $headers[$header_name];
+					$source = 'header';
+					break;
+				}
 			}
 			
 			// Check GET parameter if not in header
 			if (empty($api_key) && isset($_GET['api_key'])) {
 				$api_key = sanitize_text_field($_GET['api_key']);
+				$source = 'query';
 			}
 			
 			// Check POST parameter if not in GET
 			if (empty($api_key) && isset($_POST['api_key'])) {
 				$api_key = sanitize_text_field($_POST['api_key']);
+				$source = 'post';
 			}
 			
 			$stored_key = get_option('pbda_api_key', '');
-			return !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
+			$keys_match = !empty($api_key) && !empty($stored_key) && hash_equals($stored_key, $api_key);
+			
+			return [
+				'received_key' => $api_key,
+				'stored_key' => $stored_key,
+				'keys_match' => $keys_match,
+				'source' => $source
+			];
 		}
+
+		public function verify_api_key(): bool {
+			$result = $this->verify_api_key_with_details();
+			return $result['keys_match'];
+		}
+
+		private function api_verify_key_test(): WP_REST_Response {
+			$result = $this->verify_api_key_with_details();
+			
+			return new WP_REST_Response([
+				'success' => true,
+				'data' => $result,
+				'message' => $result['keys_match'] ? 'API keys match' : 'API keys do not match'
+			]);
+		}
+
+		/**
+		 * API Endpoints Documentation
+		 * 
+		 * Authentication Methods:
+		 * 1. API Key: Send via X-API-Key header, query parameter, or POST parameter
+		 * 2. Admin Access: WordPress admin with manage_options capability
+		 * 
+		 * Public Endpoints (No Auth Required):
+		 * 1. POST /v1/qr-attendance/submit
+		 *    Description: Submit attendance for a user
+		 *    Auth: None
+		 *    Params: 
+		 *      - userName/passWord (for login method)
+		 *      - hash/user_id (for QR code method)
+		 *    Returns: {
+		 *      "version": "V1",
+		 *      "success": boolean,
+		 *      "content": string
+		 *    }
+		 * 
+		 * 2. GET /v1/qr-attendance/reports-public
+		 *    Description: Get limited report info without authentication
+		 *    Auth: None
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": [{
+		 *        "id": integer,
+		 *        "title": string,
+		 *        "month": string,
+		 *        "formatted_date": string
+		 *      }]
+		 *    }
+		 * 
+		 * Protected Endpoints (API Key or Admin Required):
+		 * 1. GET /v1/qr-attendance/reports
+		 *    Description: Get full attendance reports
+		 *    Auth: API Key or Admin
+		 *    Headers: X-API-Key: {api_key}
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": array,
+		 *      "auth_method": string
+		 *    }
+		 * 
+		 * API Key Only Endpoints:
+		 * 1. POST /v1/qr-attendance/send-report-all
+		 *    Description: Send report to all users with attendance records
+		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
+		 *    Params: report_id (integer)
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": {
+		 *        "report_id": integer,
+		 *        "report_title": string,
+		 *        "total_users": integer,
+		 *        "results": [{
+		 *          "user_id": integer,
+		 *          "email": string,
+		 *          "status": string,
+		 *          "message": string
+		 *        }]
+		 *      }
+		 *    }
+		 * 
+		 * 2. GET /v1/qr-attendance/export-csv/{report_id}
+		 *    Description: Export report as CSV file
+		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
+		 *    Params: report_id (in URL)
+		 *    Returns: CSV file download
+		 * 
+		 * 3. POST /v1/qr-attendance/send-report
+		 *    Description: Send report to specific user
+		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
+		 *    Params: 
+		 *      - user_id (integer)
+		 *      - report_id (integer)
+		 *    Returns: {
+		 *      "success": boolean,
+		 *      "status": string,
+		 *      "message": string,
+		 *      "email_sent": boolean
+		 *    }
+		 * 
+		 * Common Error Responses:
+		 * 1. Authentication Error (401):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Invalid API key"
+		 *    }
+		 * 
+		 * 2. Bad Request (400):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Error description"
+		 *    }
+		 * 
+		 * 3. Not Found (404):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Resource not found"
+		 *    }
+		 * 
+		 * 4. Server Error (500):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Internal server error"
+		 *    }
+		 */
 
 		public function register_api(): void {
 			// Add plugin prefix to namespace
@@ -303,10 +446,29 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 				'methods' => 'GET',
 				'callback' => array($this, 'api_get_reports'),
 				'permission_callback' => function() {
-					return current_user_can('manage_options');
+					$auth = $this->verify_api_key_with_details();
+					error_log('API Authentication: ' . ($auth['keys_match'] ? 'SUCCESS' : 'FAILED') . ' via ' . $auth['source']);
+					
+					if ($auth['keys_match']) {
+						return true;
+					}
+					
+					// Fallback to admin check
+					$admin_access = current_user_can('manage_options');
+					error_log('Admin Authentication: ' . ($admin_access ? 'SUCCESS' : 'FAILED'));
+					return $admin_access;
 				}
 			));
-		
+
+			 // Commented out public endpoint for security reasons
+			 /*
+			 register_rest_route($namespace, '/qr-attendance/reports-public', array(
+				 'methods' => 'GET',
+				 'callback' => array($this, 'api_get_reports_public'),
+				 'permission_callback' => '__return_true'
+			 ));
+			 */
+
 			register_rest_route($namespace, '/qr-attendance/send-report-all', array(
 				'methods' => 'POST',
 				'callback' => array($this, 'api_send_report_all'),
@@ -353,6 +515,15 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 
 			// Add regenerate API key endpoint
 			add_action('wp_ajax_regenerate_api_key', array($this, 'regenerate_api_key'));
+
+			 // Public verify-api-key endpoint removed for security
+			 /* 
+			 register_rest_route($namespace, '/qr-attendance/verify-api-key', array(
+				 'methods' => 'GET',
+				 'callback' => array($this, 'api_verify_key_test'),
+				 'permission_callback' => '__return_true'
+			 ));
+			 */
 		}
 
 		public function regenerate_api_key(): void {
@@ -395,43 +566,125 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		}
 
 		public function api_get_reports(): WP_REST_Response {
-			$reports = pbda_get_all_reports();
-			return new WP_REST_Response([
-				'success' => true,
-				'data' => $reports
-			]);
+			try {
+				// Log authentication method used
+				$auth_method = $this->verify_api_key() ? 'API Key' : 'WordPress Admin';
+				error_log('Fetching reports using auth method: ' . $auth_method);
+				
+				$reports = pbda_get_all_reports();
+				
+				if (empty($reports)) {
+					error_log('No reports found');
+					return new WP_REST_Response([
+						'success' => true,
+						'message' => 'No reports found',
+						'data' => []
+					]);
+				}
+
+				error_log('Successfully fetched ' . count($reports) . ' reports');
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => $reports,
+					'auth_method' => $auth_method
+				]);
+
+			} catch (Exception $e) {
+				error_log('Reports API Error: ' . $e->getMessage());
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Error fetching reports: ' . $e->getMessage()
+				], 500);
+			}
+		}
+
+		public function api_get_reports_public(): WP_REST_Response {
+			try {
+				error_log('Fetching reports without authentication');
+				$reports = pbda_get_all_reports();
+				
+				// Sanitize sensitive data for public endpoint
+				$public_reports = array_map(function($report) {
+					return [
+						'id' => $report['id'],
+						'title' => $report['title'],
+						'month' => $report['month'],
+						'formatted_date' => $report['formatted_date']
+					];
+				}, $reports);
+
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => $public_reports
+				]);
+
+			} catch (Exception $e) {
+				error_log('Public Reports API Error: ' . $e->getMessage());
+				return new WP_REST_Response([
+					'success' => false,
+					'message' => 'Error fetching reports'
+				], 500);
+			}
 		}
 		
 		public function api_send_report_all(WP_REST_Request $request): WP_REST_Response {
-			$report_id = $request->get_param('report_id');
+			try {
+				$report_id = $request->get_param('report_id');
+				
+				// Verify report exists
+				$report = get_post($report_id);
+				if (!$report || $report->post_type !== 'da_reports') {
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'Invalid report ID'
+					], 400);
+				}
 			
-			// Verify report exists
-			$report = get_post($report_id);
-			if (!$report || $report->post_type !== 'da_reports') {
+				// Get all attendance records for this report
+				$attendances = get_post_meta($report_id, 'pbda_attendance', false);
+				if (empty($attendances)) {
+					return new WP_REST_Response([
+						'success' => false,
+						'message' => 'No attendance records found for this report'
+					], 404);
+				}
+
+				// Extract unique user IDs from attendance records
+				$user_ids = array_unique(array_map(function($attendance) {
+					return $attendance['user_id'];
+				}, $attendances));
+
+				$results = [];
+				foreach ($user_ids as $user_id) {
+					$user = get_user_by('id', $user_id);
+					if (!$user) continue;
+
+					$result = pbda_send_attendance_report($user_id, $report_id);
+					$results[] = [
+						'user_id' => $user_id,
+						'email' => $user->user_email,
+						'status' => $result['status'],
+						'message' => $result['message']
+					];
+				}
+			
+				return new WP_REST_Response([
+					'success' => true,
+					'data' => [
+						'report_id' => $report_id,
+						'report_title' => $report->post_title,
+						'total_users' => count($user_ids),
+						'results' => $results
+					]
+				]);
+
+			} catch (Exception $e) {
+				error_log('Send Report All Error: ' . $e->getMessage());
 				return new WP_REST_Response([
 					'success' => false,
-					'message' => 'Invalid report ID'
-				], 400);
+					'message' => 'Error sending reports: ' . $e->getMessage()
+				], 500);
 			}
-		
-			// Get all users
-			$users = get_users(['fields' => ['ID']]);
-			$results = [];
-		
-			// Send report to each user
-			foreach ($users as $user) {
-				$result = pbda_send_attendance_report($user->ID, $report_id);
-				$results[] = [
-					'user_id' => $user->ID,
-					'status' => $result['status'],
-					'message' => $result['message']
-				];
-			}
-		
-			return new WP_REST_Response([
-				'success' => true,
-				'data' => $results
-			]);
 		}
 
 		/**
@@ -644,7 +897,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					'post_title'  => sprintf( esc_html__( 'Report - %s', 'daily-attendance' ), date( 'M, Y' ) ),
 					'post_status' => 'publish',
 					'meta_input'  => array(
-						'_month' => date( 'Ym' )
+							'_month' => date( 'Ym' )
 					)
 				) );
 			}
