@@ -311,53 +311,104 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 *    Params: 
 		 *      - userName/passWord (for login method)
 		 *      - hash/user_id (for QR code method)
-		 *    Returns: Success/failure status with message
+		 *    Returns: {
+		 *      "version": "V1",
+		 *      "success": boolean,
+		 *      "content": string
+		 *    }
 		 * 
 		 * 2. GET /v1/qr-attendance/reports-public
 		 *    Description: Get limited report info without authentication
 		 *    Auth: None
-		 *    Returns: Basic report data (id, title, month, formatted_date)
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": [{
+		 *        "id": integer,
+		 *        "title": string,
+		 *        "month": string,
+		 *        "formatted_date": string
+		 *      }]
+		 *    }
 		 * 
 		 * Protected Endpoints (API Key or Admin Required):
 		 * 1. GET /v1/qr-attendance/reports
 		 *    Description: Get full attendance reports
 		 *    Auth: API Key or Admin
-		 *    Returns: Complete report data including attendance records
+		 *    Headers: X-API-Key: {api_key}
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": array,
+		 *      "auth_method": string
+		 *    }
 		 * 
 		 * API Key Only Endpoints:
 		 * 1. POST /v1/qr-attendance/send-report-all
-		 *    Description: Send report to all users with attendance
+		 *    Description: Send report to all users with attendance records
 		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
 		 *    Params: report_id (integer)
-		 *    Returns: Results for each user email sent
+		 *    Returns: {
+		 *      "success": true,
+		 *      "data": {
+		 *        "report_id": integer,
+		 *        "report_title": string,
+		 *        "total_users": integer,
+		 *        "results": [{
+		 *          "user_id": integer,
+		 *          "email": string,
+		 *          "status": string,
+		 *          "message": string
+		 *        }]
+		 *      }
+		 *    }
 		 * 
 		 * 2. GET /v1/qr-attendance/export-csv/{report_id}
 		 *    Description: Export report as CSV file
 		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
 		 *    Params: report_id (in URL)
 		 *    Returns: CSV file download
 		 * 
 		 * 3. POST /v1/qr-attendance/send-report
 		 *    Description: Send report to specific user
 		 *    Auth: API Key
+		 *    Headers: X-API-Key: {api_key}
 		 *    Params: 
 		 *      - user_id (integer)
 		 *      - report_id (integer)
-		 *    Returns: Email sending result
+		 *    Returns: {
+		 *      "success": boolean,
+		 *      "status": string,
+		 *      "message": string,
+		 *      "email_sent": boolean
+		 *    }
 		 * 
-		 * Response Format:
-		 * {
-		 *   "success": boolean,
-		 *   "data": mixed,
-		 *   "message": string (optional)
-		 * }
+		 * Common Error Responses:
+		 * 1. Authentication Error (401):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Invalid API key"
+		 *    }
 		 * 
-		 * Error Codes:
-		 * - 400: Bad Request (invalid parameters)
-		 * - 401: Unauthorized (invalid API key)
-		 * - 404: Not Found
-		 * - 500: Server Error
+		 * 2. Bad Request (400):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Error description"
+		 *    }
+		 * 
+		 * 3. Not Found (404):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Resource not found"
+		 *    }
+		 * 
+		 * 4. Server Error (500):
+		 *    {
+		 *      "success": false,
+		 *      "message": "Internal server error"
+		 *    }
 		 */
+
 		public function register_api(): void {
 			// Add plugin prefix to namespace
 			$namespace = 'v1';
@@ -844,7 +895,7 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 					'post_title'  => sprintf( esc_html__( 'Report - %s', 'daily-attendance' ), date( 'M, Y' ) ),
 					'post_status' => 'publish',
 					'meta_input'  => array(
-						'_month' => date( 'Ym' )
+							'_month' => date( 'Ym' )
 					)
 				) );
 			}
