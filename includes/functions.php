@@ -231,43 +231,72 @@ if ( ! function_exists( 'pbda_current_report_id' ) ) {
 	 * @return mixed|void
 	 */
 	function pbda_current_report_id() {
+		global $wpdb;
+		
 		// Get current year and month
 		$current_month = date('Ym', current_time('timestamp'));
 		
-		// Check for existing report first
-		$existing_report = get_posts(array(
-			'post_type'      => 'da_reports',
-			'posts_per_page' => 1,
-			'post_status'    => array('publish', 'draft', 'pending'),
-			'meta_query'     => array(
-				array(
-					'key'     => '_month',
-					'value'   => $current_month,
-					'compare' => '=',
-				),
-			),
-			'fields'         => 'ids',
-			'no_found_rows'  => true,
+		// Use direct SQL query for better locking
+		$existing_report = $wpdb->get_var($wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} p 
+			INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+			WHERE p.post_type = 'da_reports' 
+			AND p.post_status IN ('publish', 'draft', 'pending')
+			AND pm.meta_key = '_month' 
+			AND pm.meta_value = %s 
+			LIMIT 1",
+			$current_month
 		));
 
-		if (!empty($existing_report)) {
-			return reset($existing_report);
+		if ($existing_report) {
+			return (int)$existing_report;
 		}
 
-		// If no report exists, create one
-		$report_title = date('F Y', strtotime($current_month . '01'));
-		$post_data = array(
-			'post_title'  => $report_title,
-			'post_type'   => 'da_reports',
-			'post_status' => 'publish',
-		);
-
-		$report_id = wp_insert_post($post_data);
-		if (!is_wp_error($report_id)) {
-			update_post_meta($report_id, '_month', $current_month);
+		// Use WordPress transients to prevent race conditions
+		$lock_key = 'creating_report_' . $current_month;
+		if (get_transient($lock_key)) {
+			// Wait for a moment and check again
+			sleep(1);
+			return pbda_current_report_id();
 		}
 
-		return $report_id;
+		// Set a temporary lock
+		set_transient($lock_key, true, 30);
+
+		try {
+			// Check one more time before creating
+			$double_check = $wpdb->get_var($wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} p 
+				INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+				WHERE p.post_type = 'da_reports' 
+				AND p.post_status IN ('publish', 'draft', 'pending')
+				AND pm.meta_key = '_month' 
+				AND pm.meta_value = %s 
+				LIMIT 1",
+				$current_month
+			));
+
+			if ($double_check) {
+				delete_transient($lock_key);
+				return (int)$double_check;
+			}
+
+			// Create new report
+			$report_title = date('F Y', strtotime($current_month . '01'));
+			$report_id = wp_insert_post([
+				'post_title'  => $report_title,
+				'post_type'   => 'da_reports',
+				'post_status' => 'publish',
+			], true);
+
+			if (!is_wp_error($report_id)) {
+				update_post_meta($report_id, '_month', $current_month);
+			}
+
+			return $report_id;
+		} finally {
+			delete_transient($lock_key);
+		}
 	}
 }
 
@@ -478,4 +507,48 @@ function pbda_get_all_reports() {'timestamp'],
     }
 
     return $formatted_reports;
+}
+
+if (!function_exists('pbda_cleanup_duplicate_reports')) {
+    function pbda_cleanup_duplicate_reports() {
+        global $wpdb;
+        
+        $results = ['cleaned' => 0, 'preserved' => 0];
+        
+        // Get all months that have reports
+        $months = $wpdb->get_col(
+            "SELECT DISTINCT pm.meta_value 
+            FROM {$wpdb->postmeta} pm 
+            INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id 
+            WHERE p.post_type = 'da_reports' 
+            AND pm.meta_key = '_month'"
+        );
+        
+        foreach ($months as $month) {
+            // Get all reports for this month, ordered by creation date
+            $reports = $wpdb->get_results($wpdb->prepare(
+                "SELECT p.ID 
+                FROM {$wpdb->posts} p 
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+                WHERE p.post_type = 'da_reports' 
+                AND pm.meta_key = '_month' 
+                AND pm.meta_value = %s 
+                ORDER BY p.post_date ASC",
+                $month
+            ));
+            
+            if (count($reports) > 1) {
+                // Keep the first report, delete others
+                $keep = array_shift($reports);
+                $results['preserved']++;
+                
+                foreach ($reports as $report) {
+                    wp_delete_post($report->ID, true);
+                    $results['cleaned']++;
+                }
+            }
+        }
+        
+        return $results;
+    }
 }

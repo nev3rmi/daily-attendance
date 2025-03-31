@@ -888,19 +888,8 @@ if ( ! class_exists( 'PBDA_Hooks' ) ) {
 		 * Generate Monthly Report
 		 */
 		public function generate_monthly_report(): void {
-
-			$current_report_id = pbda_current_report_id();
-
-			if ( empty( $current_report_id ) || ! $current_report_id ) {
-				wp_insert_post( array(
-					'post_type'   => 'da_reports',
-					'post_title'  => sprintf( esc_html__( 'Report - %s', 'daily-attendance' ), date( 'M, Y' ) ),
-					'post_status' => 'publish',
-					'meta_input'  => array(
-							'_month' => date( 'Ym' )
-					)
-				) );
-			}
+			// Simply call pbda_current_report_id() which now handles duplicates
+			pbda_current_report_id();
 		}
 
 
